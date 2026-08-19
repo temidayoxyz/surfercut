@@ -374,37 +374,31 @@ div[class*="st-key-generate_video_button"] button {
    ========================================================================== */
 
 .st-key-editor_workspace {
-    height: calc(100vh - 4.5rem) !important;
-    max-height: calc(100vh - 4.5rem) !important;
-    overflow: hidden !important;
+    min-height: calc(100vh - 5rem) !important;
+    overflow: visible !important;
+    padding-bottom: 2rem !important;
 }
 
 .st-key-editor_workspace > div[data-testid="stHorizontalBlock"] {
-    height: 100% !important;
-    max-height: 100% !important;
-    align-items: stretch !important;
+    align-items: flex-start !important;
 }
 
 .st-key-editor_workspace [data-testid="stColumn"] {
-    height: 100% !important;
-    max-height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: hidden !important;
+    overflow: visible !important;
 }
 
 /* Tabs Header Sticky */
 .st-key-editor_workspace div[data-testid="stTabs"] {
     display: flex !important;
     flex-direction: column !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    overflow: hidden !important;
+    overflow: visible !important;
 }
 
 .st-key-editor_workspace div[data-testid="stTabs"] [role="tablist"] {
     position: sticky !important;
-    top: 0 !important;
+    top: 3.2rem !important;
     z-index: 20 !important;
     background: var(--sc-void) !important;
     border-bottom: 1px solid var(--sc-line) !important;

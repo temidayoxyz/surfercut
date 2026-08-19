@@ -1869,41 +1869,45 @@ def _render_preview_monitor(task_id, task):
                 download_name = _build_video_download_name(
                     (task or {}).get("video_subject"), 1, 1
                 )
-                with open(url, "rb") as video_file:
-                    st.download_button(
-                        f"{tr('Download Video')} ({os.path.basename(url)})",
-                        data=video_file,
-                        file_name=download_name,
-                        mime=mimetypes.guess_type(url)[0] or "video/mp4",
-                        key=f"download_preview_single_{task_id}",
-                        icon=":material/download:",
-                        type="primary",
-                        use_container_width=True,
-                    )
+                try:
+                    with open(url, "rb") as video_file:
+                        st.download_button(
+                            f"{tr('Download Video')} ({os.path.basename(url)})",
+                            data=video_file.read(),
+                            file_name=download_name,
+                            mime=mimetypes.guess_type(url)[0] or "video/mp4",
+                            key=f"download_preview_single_{task_id}",
+                            icon=":material/download:",
+                            type="primary",
+                            use_container_width=True,
+                        )
+                except Exception as exc:
+                    logger.warning(f"failed to read video for download button: {exc}")
         else:
             variant_tabs = st.tabs([f"Variant {i + 1}" for i in range(len(video_files))])
             for i, (tab, url) in enumerate(zip(variant_tabs, video_files)):
                 with tab:
+                    st.markdown(f'<div class="{video_wrap_class}">', unsafe_allow_html=True)
+                    st.video(url)
+                    st.markdown('</div>', unsafe_allow_html=True)
                     if os.path.isfile(url):
-                        st.markdown(f'<div class="{video_wrap_class}">', unsafe_allow_html=True)
-                        st.video(url)
-                        st.markdown('</div>', unsafe_allow_html=True)
                         download_name = _build_video_download_name(
                             (task or {}).get("video_subject"), i + 1, len(video_files)
                         )
-                        with open(url, "rb") as video_file:
-                            st.download_button(
-                                f"{tr('Download Video')} #{i + 1} ({os.path.basename(url)})",
-                                data=video_file,
-                                file_name=download_name,
-                                mime=mimetypes.guess_type(url)[0] or "video/mp4",
-                                key=f"download_preview_multi_{task_id}_{i}",
-                                icon=":material/download:",
-                                type="primary",
-                                use_container_width=True,
-                            )
-                    else:
-                        st.video(url)
+                        try:
+                            with open(url, "rb") as video_file:
+                                st.download_button(
+                                    f"{tr('Download Video')} #{i + 1} ({os.path.basename(url)})",
+                                    data=video_file.read(),
+                                    file_name=download_name,
+                                    mime=mimetypes.guess_type(url)[0] or "video/mp4",
+                                    key=f"download_preview_multi_{task_id}_{i}",
+                                    icon=":material/download:",
+                                    type="primary",
+                                    use_container_width=True,
+                                )
+                        except Exception as exc:
+                            logger.warning(f"failed to read video for download button: {exc}")
         return
 
     kicker = html.escape(tr("Preview Stage"))
@@ -1987,11 +1991,8 @@ def _render_inspector(task_id, task):
 
 
 def _render_generation_timeline(task_id, task):
-    if not task_id or not task:
-        return
-
-    state = _normalize_task_state((task or {}).get("state"))
-    progress, status = _timeline_progress(task)
+    state = _normalize_task_state((task or {}).get("state")) if task else None
+    progress, status = _timeline_progress(task) if task else (0, "idle")
 
     raw_subject = str((task or {}).get("video_subject") or (task or {}).get("subject") or "").strip()
     if not raw_subject:
@@ -2059,9 +2060,12 @@ def _render_generation_timeline(task_id, task):
     elif is_failed:
         pct_html = '<span class="sc-queue-pct is-failed">Failed</span>'
         action_icon = _icon_img("lucide/alert-circle", "ef4444", 20)
-    else:
+    elif is_processing:
         pct_html = f'<span class="sc-queue-pct">{progress}%</span>'
         action_icon = _icon_img("lucide/x-circle", "8b949e", 20)
+    else:
+        pct_html = '<span class="sc-queue-pct">Ready</span>'
+        action_icon = _icon_img("lucide/clock", "8b949e", 20)
 
     timeline_ico = _icon_img("lucide/clock", "8b949e", 16)
 
