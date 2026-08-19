@@ -1966,31 +1966,89 @@ def _render_inspector(task_id, task):
 
 
 def _render_generation_timeline(task_id, task):
+    if not task_id or not task:
+        return
+
+    state = _normalize_task_state((task or {}).get("state"))
     progress, status = _timeline_progress(task)
-    subject = html.escape(str((task or {}).get("video_subject") or "Project_Alpha_v2.mp4"))
-    if not subject.endswith(".mp4"):
-        subject += ".mp4"
-    percent = progress if progress > 0 else 68
-    check_icon = _icon_img("lucide/check-circle-2", "3b82f6", 18)
-    ring_icon = _icon_img("lucide/disc", "3b82f6", 18)
-    cancel_icon = _icon_img("lucide/x-circle", "8b949e", 20)
+
+    raw_subject = str((task or {}).get("video_subject") or (task or {}).get("subject") or "").strip()
+    if not raw_subject:
+        raw_subject = f"Project_{task_id[:8]}" if task_id else "Project"
+    if not raw_subject.endswith(".mp4"):
+        raw_subject += ".mp4"
+    subject = html.escape(raw_subject)
+
+    is_complete = (state == const.TASK_STATE_COMPLETE) or (progress >= 100)
+    is_failed = (state == const.TASK_STATE_FAILED)
+    is_processing = (state == const.TASK_STATE_PROCESSING)
+
+    # Step 1: Analysis (0-20%)
+    if is_complete or progress >= 20:
+        step1_class = "done"
+        step1_icon = _icon_img("lucide/check-circle-2", "10b981" if is_complete else "3b82f6", 18)
+    elif is_processing and progress < 20:
+        step1_class = "active"
+        step1_icon = _icon_img("lucide/disc", "3b82f6", 18)
+    else:
+        step1_class = ""
+        step1_icon = _icon_img("lucide/circle", "8b949e", 18)
+
+    # Line 1 (Analysis -> Generation)
+    line1_class = "done" if (is_complete or progress >= 20) else ""
+
+    # Step 2: Generation (20-70%)
+    if is_complete or progress >= 70:
+        step2_class = "done"
+        step2_icon = _icon_img("lucide/check-circle-2", "10b981" if is_complete else "3b82f6", 18)
+    elif is_processing and 20 <= progress < 70:
+        step2_class = "active"
+        step2_icon = _icon_img("lucide/disc", "3b82f6", 18)
+    else:
+        step2_class = ""
+        step2_icon = _icon_img("lucide/circle", "8b949e", 18)
+
+    # Line 2 (Generation -> Rendering)
+    line2_class = "done" if (is_complete or progress >= 70) else ""
+
+    # Step 3: Rendering (70-100%)
+    if is_complete:
+        step3_class = "done"
+        step3_icon = _icon_img("lucide/check-circle-2", "10b981", 18)
+    elif is_processing and progress >= 70:
+        step3_class = "active"
+        step3_icon = _icon_img("lucide/disc", "3b82f6", 18)
+    else:
+        step3_class = ""
+        step3_icon = _icon_img("lucide/circle", "8b949e", 18)
+
+    # Percentage / Status badge
+    if is_complete:
+        pct_html = '<span class="sc-queue-pct is-complete">100%</span>'
+        action_icon = _icon_img("lucide/check-check", "10b981", 20)
+    elif is_failed:
+        pct_html = '<span class="sc-queue-pct is-failed">Failed</span>'
+        action_icon = _icon_img("lucide/alert-circle", "ef4444", 20)
+    else:
+        pct_html = f'<span class="sc-queue-pct">{progress}%</span>'
+        action_icon = _icon_img("lucide/x-circle", "8b949e", 20)
 
     st.markdown(
         f'<div class="sc-queue-card">'
         f'  <div class="sc-queue-row-top">'
         f'    <div class="sc-queue-tag">GENERATION QUEUE</div>'
-        f'    <div class="sc-queue-name">{subject}</div>'
+        f'    <div class="sc-queue-name" title="{subject}">{subject}</div>'
         f'  </div>'
         f'  <div class="sc-queue-stepper-wrap">'
-        f'    <div class="sc-queue-step done">{check_icon} <span>Analysis</span></div>'
-        f'    <div class="sc-queue-line done"></div>'
-        f'    <div class="sc-queue-step done">{check_icon} <span>Generation</span></div>'
-        f'    <div class="sc-queue-line"></div>'
-        f'    <div class="sc-queue-step active">{ring_icon} <span>Rendering</span></div>'
+        f'    <div class="sc-queue-step {step1_class}">{step1_icon} <span>Analysis</span></div>'
+        f'    <div class="sc-queue-line {line1_class}"></div>'
+        f'    <div class="sc-queue-step {step2_class}">{step2_icon} <span>Generation</span></div>'
+        f'    <div class="sc-queue-line {line2_class}"></div>'
+        f'    <div class="sc-queue-step {step3_class}">{step3_icon} <span>Rendering</span></div>'
         f'  </div>'
         f'  <div class="sc-queue-row-end">'
-        f'    <span class="sc-queue-pct">{percent}%</span>'
-        f'    <span class="sc-queue-cancel">{cancel_icon}</span>'
+        f'    {pct_html}'
+        f'    <span class="sc-queue-cancel">{action_icon}</span>'
         f'  </div>'
         f'</div>',
         unsafe_allow_html=True,

@@ -582,11 +582,19 @@ label[data-testid="stWidgetLabel"] p {
     color: var(--sc-signal);
 }
 
+.sc-queue-pct.is-complete {
+    color: var(--sc-accent-green) !important;
+}
+
+.sc-queue-pct.is-failed {
+    color: var(--sc-danger) !important;
+}
+
 .sc-queue-cancel {
     cursor: pointer;
     display: flex;
     align-items: center;
-    opacity: 0.75;
+    opacity: 0.85;
     transition: opacity 0.15s ease;
 }
 
