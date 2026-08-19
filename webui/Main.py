@@ -1422,7 +1422,7 @@ def _render_top_bar():
     view = st.session_state.get("app_view", "home")
     with st.container(key="top_bar"):
         brand_col, actions_col = st.columns(
-            [3.2, 2.4],
+            [2.0, 4.0],
             vertical_alignment="center",
             gap="small",
         )
@@ -1785,31 +1785,41 @@ def _render_home():
 
 def _render_project_card(task):
     task_id = task["task_id"]
-    subject = str(task.get("subject") or task_id)
+    subject = str(task.get("subject") or task_id).strip()
     when = datetime.fromtimestamp(task["mtime"]).strftime("%Y-%m-%d %H:%M")
     status = _task_state_label(task.get("state"), bool(task.get("video_file")))
-    thumb = _icon_img("lucide/clapperboard", "9a9a9a", 22)
-    st.markdown(
-        f'<div class="sc-project-card">'
-        f'<div class="sc-project-card__thumb">{thumb}</div>'
-        f"<h3>{html.escape(subject)}</h3>"
-        f"<p>{html.escape(status)} · {html.escape(when)}</p></div>",
-        unsafe_allow_html=True,
-    )
-    open_col, restore_col, delete_col = st.columns(3)
-    if open_col.button(tr("Open"), key=f"open_project_{task_id}"):
-        _open_editor(task_id)
-    restore_label = tr("Load Task Configuration")
-    if restore_col.button(restore_label, key=f"home_restore_{task_id}"):
-        _queue_task_restore(task_id)
-        st.session_state["app_view"] = "editor"
-        st.rerun()
-    if delete_col.button(tr("Delete"), key=f"home_delete_{task_id}"):
-        if _delete_task(task_id, task["task_path"], task.get("state")):
-            st.toast(tr("Task Deleted"))
-            st.rerun()
-        else:
-            st.error(tr("Task Delete Failed"))
+    thumb = _icon_img("lucide/clapperboard", "9a9a9a", 24)
+
+    with st.container(key=f"card_container_{task_id}"):
+        st.markdown(
+            f'<div class="sc-project-card">'
+            f'  <div class="sc-project-card__thumb">{thumb}</div>'
+            f'  <div class="sc-project-card__meta">'
+            f'    <span class="sc-project-card__status">{html.escape(status)}</span>'
+            f'    <span class="sc-project-card__date">{html.escape(when)}</span>'
+            f'  </div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            subject,
+            key=f"open_title_{task_id}",
+            use_container_width=True,
+            help=tr("Open"),
+        ):
+            _open_editor(task_id)
+
+        card_spacer, open_btn_col, del_btn_col = st.columns([0.6, 0.2, 0.2], gap="small")
+        with open_btn_col:
+            if st.button("", key=f"open_icon_{task_id}", icon=":material/play_arrow:", help=tr("Open")):
+                _open_editor(task_id)
+        with del_btn_col:
+            if st.button("", key=f"del_icon_{task_id}", icon=":material/delete:", help=tr("Delete")):
+                if _delete_task(task_id, task["task_path"], task.get("state")):
+                    st.toast(tr("Task Deleted"))
+                    st.rerun()
+                else:
+                    st.error(tr("Task Delete Failed"))
 
 
 def _render_editor_rail():
@@ -1828,24 +1838,33 @@ def _render_editor_rail():
 
 
 def _render_preview_monitor(task_id, task):
-    ratio_icon = _icon_img("lucide/ratio", "8b949e", 16)
-    max_icon = _icon_img("lucide/maximize-2", "8b949e", 16)
-    st.markdown(
-        f'<div class="sc-preview-header">'
-        f'  <span class="sc-preview-title">PREVIEW</span>'
-        f'  <div class="sc-preview-actions">{ratio_icon}&nbsp;&nbsp;{max_icon}</div>'
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    is_expanded = st.session_state.get(f"preview_expanded_{task_id}", False)
+    header_col, btn_col = st.columns([0.88, 0.12], vertical_alignment="center")
+    with header_col:
+        preview_ico = _icon_img("lucide/monitor-play", "8b949e", 16)
+        st.markdown(
+            f'<div class="sc-preview-title">{preview_ico}&nbsp; PREVIEW</div>',
+            unsafe_allow_html=True,
+        )
+    with btn_col:
+        max_icon_name = ":material/fullscreen_exit:" if is_expanded else ":material/fullscreen:"
+        if st.button("", key=f"btn_toggle_expand_{task_id}", icon=max_icon_name, help="Toggle Full Preview"):
+            st.session_state[f"preview_expanded_{task_id}"] = not is_expanded
+            st.rerun()
+
     video_files = (task or {}).get("videos") or []
     if not video_files and (task or {}).get("video_file"):
         if os.path.isfile(task["video_file"]):
             video_files = [task["video_file"]]
 
+    video_wrap_class = "sc-video-wrap is-expanded" if is_expanded else "sc-video-wrap is-normal"
+
     if video_files:
         if len(video_files) == 1:
             url = video_files[0]
+            st.markdown(f'<div class="{video_wrap_class}">', unsafe_allow_html=True)
             st.video(url)
+            st.markdown('</div>', unsafe_allow_html=True)
             if os.path.isfile(url):
                 download_name = _build_video_download_name(
                     (task or {}).get("video_subject"), 1, 1
@@ -1866,7 +1885,9 @@ def _render_preview_monitor(task_id, task):
             for i, (tab, url) in enumerate(zip(variant_tabs, video_files)):
                 with tab:
                     if os.path.isfile(url):
+                        st.markdown(f'<div class="{video_wrap_class}">', unsafe_allow_html=True)
                         st.video(url)
+                        st.markdown('</div>', unsafe_allow_html=True)
                         download_name = _build_video_download_name(
                             (task or {}).get("video_subject"), i + 1, len(video_files)
                         )
@@ -1987,12 +2008,15 @@ def _render_generation_timeline(task_id, task):
     if is_complete or progress >= 20:
         step1_class = "done"
         step1_icon = _icon_img("lucide/check-circle-2", "10b981" if is_complete else "3b82f6", 18)
+        step1_text = "Analyzed"
     elif is_processing and progress < 20:
         step1_class = "active"
         step1_icon = _icon_img("lucide/disc", "3b82f6", 18)
+        step1_text = "Analyzing Configuration"
     else:
         step1_class = ""
         step1_icon = _icon_img("lucide/circle", "8b949e", 18)
+        step1_text = "Configuration"
 
     # Line 1 (Analysis -> Generation)
     line1_class = "done" if (is_complete or progress >= 20) else ""
@@ -2001,12 +2025,15 @@ def _render_generation_timeline(task_id, task):
     if is_complete or progress >= 70:
         step2_class = "done"
         step2_icon = _icon_img("lucide/check-circle-2", "10b981" if is_complete else "3b82f6", 18)
+        step2_text = "Generated"
     elif is_processing and 20 <= progress < 70:
         step2_class = "active"
         step2_icon = _icon_img("lucide/disc", "3b82f6", 18)
+        step2_text = "Generating Assets"
     else:
         step2_class = ""
         step2_icon = _icon_img("lucide/circle", "8b949e", 18)
+        step2_text = "Assets"
 
     # Line 2 (Generation -> Rendering)
     line2_class = "done" if (is_complete or progress >= 70) else ""
@@ -2015,16 +2042,19 @@ def _render_generation_timeline(task_id, task):
     if is_complete:
         step3_class = "done"
         step3_icon = _icon_img("lucide/check-circle-2", "10b981", 18)
+        step3_text = "Rendered"
     elif is_processing and progress >= 70:
         step3_class = "active"
         step3_icon = _icon_img("lucide/disc", "3b82f6", 18)
+        step3_text = "Rendering Video"
     else:
         step3_class = ""
         step3_icon = _icon_img("lucide/circle", "8b949e", 18)
+        step3_text = "Rendering"
 
     # Percentage / Status badge
     if is_complete:
-        pct_html = '<span class="sc-queue-pct is-complete">100%</span>'
+        pct_html = '<span class="sc-queue-pct is-complete">100% Done</span>'
         action_icon = _icon_img("lucide/check-check", "10b981", 20)
     elif is_failed:
         pct_html = '<span class="sc-queue-pct is-failed">Failed</span>'
@@ -2033,18 +2063,20 @@ def _render_generation_timeline(task_id, task):
         pct_html = f'<span class="sc-queue-pct">{progress}%</span>'
         action_icon = _icon_img("lucide/x-circle", "8b949e", 20)
 
+    timeline_ico = _icon_img("lucide/clock", "8b949e", 16)
+
     st.markdown(
         f'<div class="sc-queue-card">'
         f'  <div class="sc-queue-row-top">'
-        f'    <div class="sc-queue-tag">GENERATION QUEUE</div>'
-        f'    <div class="sc-queue-name" title="{subject}">{subject}</div>'
+        f'    <div class="sc-preview-title">{timeline_ico}&nbsp; TIMELINE</div>'
+        f'    <div class="sc-queue-name">{subject}</div>'
         f'  </div>'
         f'  <div class="sc-queue-stepper-wrap">'
-        f'    <div class="sc-queue-step {step1_class}">{step1_icon} <span>Analysis</span></div>'
+        f'    <div class="sc-queue-step {step1_class}">{step1_icon} <span>{step1_text}</span></div>'
         f'    <div class="sc-queue-line {line1_class}"></div>'
-        f'    <div class="sc-queue-step {step2_class}">{step2_icon} <span>Generation</span></div>'
+        f'    <div class="sc-queue-step {step2_class}">{step2_icon} <span>{step2_text}</span></div>'
         f'    <div class="sc-queue-line {line2_class}"></div>'
-        f'    <div class="sc-queue-step {step3_class}">{step3_icon} <span>Rendering</span></div>'
+        f'    <div class="sc-queue-step {step3_class}">{step3_icon} <span>{step3_text}</span></div>'
         f'  </div>'
         f'  <div class="sc-queue-row-end">'
         f'    {pct_html}'

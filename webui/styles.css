@@ -1,5 +1,5 @@
 /* ==========================================================================
-   SurferCut Studio Design System & Responsive Styles (Dynamic & Pixel-Perfect)
+   SurferCut Studio Design System & Responsive Styles (Target Polish & Fidelity)
    ========================================================================== */
 
 /* 1. Hide Streamlit Platform Chrome */
@@ -21,7 +21,7 @@ div[data-testid="stSkillsNudge"] {
 }
 
 div[data-testid="stMainBlockContainer"] {
-    padding: 0.4rem 1rem 2rem !important;
+    padding: 0.35rem 1rem 1.5rem !important;
     max-width: 100% !important;
 }
 
@@ -31,11 +31,11 @@ h1, h2, h3, h4, p {
 }
 
 /* ==========================================================================
-   2. Theme Variables: Dark (Default Studio), Light & System
+   2. Light, Dark & System Theme Custom Properties
    ========================================================================== */
 
 [data-testid="stApp"] {
-    /* Dark Studio Theme (Matches Target Screenshot) */
+    /* Dark Studio Theme */
     --sc-void: #12141a;
     --sc-coal: #1a1d24;
     --sc-ash: #232732;
@@ -133,7 +133,34 @@ h1, h2, h3, h4, p {
 }
 
 /* ==========================================================================
-   3. Native Streamlit Form & Controls Theming (Dynamic Light/Dark Mode)
+   3. Slim, Light Unobtrusive Scrollbars
+   ========================================================================== */
+
+* {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(140, 150, 165, 0.2) transparent !important;
+}
+
+::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(140, 150, 165, 0.2) !important;
+    border-radius: 4px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 150, 165, 0.4) !important;
+}
+
+/* ==========================================================================
+   4. Native Streamlit Form & Controls Theming
    ========================================================================== */
 
 /* Inputs & Textareas */
@@ -171,7 +198,6 @@ div[data-baseweb="select"] span {
     color: var(--sc-snow) !important;
 }
 
-/* Dynamic dropdown icons */
 div[data-baseweb="select"] svg {
     fill: var(--sc-fog) !important;
 }
@@ -196,17 +222,16 @@ ul[role="listbox"] li[aria-selected="true"] {
     color: var(--sc-snow) !important;
 }
 
-/* Streamlit Buttons */
+/* Buttons */
 div[data-testid="stButton"] > button {
     border-radius: 6px !important;
     font-size: 0.85rem !important;
     font-weight: 550 !important;
-    padding: 0.4rem 0.85rem !important;
+    padding: 0.35rem 0.75rem !important;
     min-height: 2.1rem !important;
     transition: all 0.15s ease !important;
 }
 
-/* Secondary Buttons */
 div[data-testid="stButton"] > button[kind="secondary"] {
     background: var(--sc-coal) !important;
     border: 1px solid var(--sc-line) !important;
@@ -219,7 +244,6 @@ div[data-testid="stButton"] > button[kind="secondary"]:hover {
     color: var(--sc-snow) !important;
 }
 
-/* Primary Button */
 div[data-testid="stButton"] > button[kind="primary"] {
     background: var(--sc-signal) !important;
     border: 1px solid var(--sc-signal) !important;
@@ -265,45 +289,40 @@ label[data-testid="stWidgetLabel"] p {
 }
 
 /* ==========================================================================
-   4. Top Bar Header & Navigation
+   5. Top Bar Header (Sticky, Straight Line, No Breaking)
    ========================================================================== */
 
 .st-key-top_bar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 100 !important;
+    background: var(--sc-void) !important;
     margin: 0 0 0.5rem !important;
-    padding: 0.25rem 0 0.55rem !important;
+    padding: 0.25rem 0 0.5rem !important;
     border-bottom: 1px solid var(--sc-line);
+}
+
+.st-key-top_bar [data-testid="stHorizontalBlock"] {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 0.75rem !important;
 }
 
 .sc-topbar-brand {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+    white-space: nowrap;
 }
 
 .sc-brand-title {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     font-weight: 750;
     letter-spacing: -0.02em;
     color: var(--sc-snow);
-}
-
-.sc-nav-item {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--sc-fog);
-    text-decoration: none !important;
-    padding-bottom: 0.25rem;
-    cursor: pointer;
-    transition: color 0.15s ease;
-}
-
-.sc-nav-item:hover {
-    color: var(--sc-snow);
-}
-
-.sc-nav-item.is-active {
-    color: var(--sc-snow);
-    border-bottom: 2px solid var(--sc-snow);
+    white-space: nowrap;
 }
 
 .sc-crumb {
@@ -313,6 +332,7 @@ label[data-testid="stWidgetLabel"] p {
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    white-space: nowrap;
 }
 
 .sc-crumb strong {
@@ -322,20 +342,76 @@ label[data-testid="stWidgetLabel"] p {
 
 .st-key-top_bar_actions {
     display: flex !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
+    justify-content: flex-end !important;
     gap: 0.5rem !important;
+    white-space: nowrap !important;
+}
+
+/* Floating / Header Export Button */
+div[class*="st-key-generate_video_button"] {
+    position: fixed !important;
+    top: 0.45rem;
+    right: 1.25rem;
+    z-index: 110;
+    width: auto !important;
+}
+
+div[class*="st-key-generate_video_button"] button {
+    background: var(--sc-signal) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    min-width: 5.5rem;
+    height: 2rem !important;
+    font-weight: 650 !important;
+    font-size: 0.85rem !important;
 }
 
 /* ==========================================================================
-   5. Studio Editor Tabs with Icons & Green Highlights (Target Screenshot Match)
+   6. Studio Editor 3-Column Layout (Sticky Tabs & Scrollable Content)
    ========================================================================== */
 
+.st-key-editor_workspace {
+    height: calc(100vh - 4.5rem) !important;
+    max-height: calc(100vh - 4.5rem) !important;
+    overflow: hidden !important;
+}
+
+.st-key-editor_workspace > div[data-testid="stHorizontalBlock"] {
+    height: 100% !important;
+    max-height: 100% !important;
+    align-items: stretch !important;
+}
+
+.st-key-editor_workspace [data-testid="stColumn"] {
+    height: 100% !important;
+    max-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* Tabs Header Sticky */
+.st-key-editor_workspace div[data-testid="stTabs"] {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+}
+
 .st-key-editor_workspace div[data-testid="stTabs"] [role="tablist"] {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background: var(--sc-void) !important;
     border-bottom: 1px solid var(--sc-line) !important;
     gap: 0 !important;
     padding-bottom: 0 !important;
-    margin-bottom: 0.75rem !important;
-    background: transparent !important;
+    margin-bottom: 0.5rem !important;
+    flex-shrink: 0 !important;
 }
 
 .st-key-editor_workspace div[data-testid="stTabs"] [role="tab"] {
@@ -344,7 +420,7 @@ label[data-testid="stWidgetLabel"] p {
     font-weight: 650 !important;
     letter-spacing: 0.04em !important;
     text-transform: uppercase !important;
-    padding: 0.55rem 1.2rem !important;
+    padding: 0.5rem 1.1rem !important;
     border-radius: 0 !important;
     border: none !important;
     background: transparent !important;
@@ -358,13 +434,12 @@ label[data-testid="stWidgetLabel"] p {
     color: var(--sc-snow) !important;
 }
 
-/* Tab Icons using CSS masks for automatic theme adaptation */
-/* Left Tabs: 1=SCRIPT, 2=SUBTITLES */
+/* Tab Icons */
 .st-key-editor_workspace [data-testid="stColumn"]:first-child div[data-testid="stTabs"] [role="tab"]:nth-child(1)::before {
     content: "";
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
+    width: 0.95rem;
+    height: 0.95rem;
     background-color: currentColor;
     -webkit-mask: url("https://api.iconify.design/lucide/file-text.svg") no-repeat center / contain;
     mask: url("https://api.iconify.design/lucide/file-text.svg") no-repeat center / contain;
@@ -373,19 +448,18 @@ label[data-testid="stWidgetLabel"] p {
 .st-key-editor_workspace [data-testid="stColumn"]:first-child div[data-testid="stTabs"] [role="tab"]:nth-child(2)::before {
     content: "";
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
+    width: 0.95rem;
+    height: 0.95rem;
     background-color: currentColor;
     -webkit-mask: url("https://api.iconify.design/lucide/captions.svg") no-repeat center / contain;
     mask: url("https://api.iconify.design/lucide/captions.svg") no-repeat center / contain;
 }
 
-/* Right Tabs: 1=VIDEO, 2=AUDIO */
 .st-key-editor_workspace [data-testid="stColumn"]:last-child div[data-testid="stTabs"] [role="tab"]:nth-child(1)::before {
     content: "";
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
+    width: 0.95rem;
+    height: 0.95rem;
     background-color: currentColor;
     -webkit-mask: url("https://api.iconify.design/lucide/clapperboard.svg") no-repeat center / contain;
     mask: url("https://api.iconify.design/lucide/clapperboard.svg") no-repeat center / contain;
@@ -394,8 +468,8 @@ label[data-testid="stWidgetLabel"] p {
 .st-key-editor_workspace [data-testid="stColumn"]:last-child div[data-testid="stTabs"] [role="tab"]:nth-child(2)::before {
     content: "";
     display: inline-block;
-    width: 1rem;
-    height: 1rem;
+    width: 0.95rem;
+    height: 0.95rem;
     background-color: currentColor;
     -webkit-mask: url("https://api.iconify.design/lucide/audio-lines.svg") no-repeat center / contain;
     mask: url("https://api.iconify.design/lucide/audio-lines.svg") no-repeat center / contain;
@@ -406,6 +480,20 @@ label[data-testid="stWidgetLabel"] p {
     color: var(--sc-accent-green) !important;
     border-bottom: 2px solid var(--sc-accent-green) !important;
     background: transparent !important;
+}
+
+/* Scrollable Tab Panels */
+.st-key-editor_workspace div[data-testid="stTabs"] [role="tabpanel"] {
+    flex: 1 1 auto !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 0.25rem !important;
+}
+
+.st-key-editor_workspace [data-testid="stColumn"]:nth-child(2) > div {
+    overflow-y: auto !important;
+    height: 100% !important;
+    padding-right: 0.25rem !important;
 }
 
 /* Panel Containers */
@@ -426,14 +514,14 @@ label[data-testid="stWidgetLabel"] p {
 }
 
 /* ==========================================================================
-   6. Center Video Preview & Generation Queue Stepper
+   7. Preview Stage, Video Sizing & Maximize Toggle
    ========================================================================== */
 
 .sc-preview-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.4rem 0.2rem 0.6rem;
+    padding: 0.3rem 0.2rem 0.5rem;
 }
 
 .sc-preview-title {
@@ -442,16 +530,30 @@ label[data-testid="stWidgetLabel"] p {
     letter-spacing: 0.05em;
     color: var(--sc-fog);
     text-transform: uppercase;
-}
-
-.sc-preview-actions {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    opacity: 0.8;
 }
 
-/* Preview Monitor Viewport (16:9 and 9:16 support) */
+/* Video Player Wrapper (Reduced size by default, full size on expand) */
+.sc-video-wrap {
+    transition: all 0.25s ease-in-out;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.sc-video-wrap.is-normal {
+    max-width: 82%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.sc-video-wrap.is-expanded {
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
 .sc-monitor {
     border: 1px solid var(--sc-line);
     border-radius: 8px;
@@ -459,12 +561,12 @@ label[data-testid="stWidgetLabel"] p {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
 }
 
 .sc-monitor__stage {
     background: #000000;
-    min-height: 20rem;
+    min-height: 18rem;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -490,7 +592,7 @@ label[data-testid="stWidgetLabel"] p {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.45rem 0.85rem;
+    padding: 0.4rem 0.85rem;
     color: var(--sc-fog);
     font-size: 0.75rem;
     font-family: ui-monospace, Menlo, Monaco, monospace;
@@ -498,7 +600,10 @@ label[data-testid="stWidgetLabel"] p {
     background: var(--sc-coal);
 }
 
-/* Generation Queue Box */
+/* ==========================================================================
+   8. Timeline Stepper Card (Full Non-Truncated Titles & Dynamic Stages)
+   ========================================================================== */
+
 .sc-queue-card {
     background: var(--sc-coal);
     border: 1px solid var(--sc-line);
@@ -508,38 +613,31 @@ label[data-testid="stWidgetLabel"] p {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    margin-top: 0.4rem;
 }
 
 .sc-queue-row-top {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.2rem;
+    flex: 1 1 35%;
     min-width: 140px;
-}
-
-.sc-queue-tag {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--sc-fog);
-    text-transform: uppercase;
 }
 
 .sc-queue-name {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--sc-signal);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 160px;
+    line-height: 1.35;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .sc-queue-stepper-wrap {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    flex: 1;
+    gap: 0.45rem;
+    flex: 2 1 45%;
     justify-content: center;
 }
 
@@ -550,6 +648,7 @@ label[data-testid="stWidgetLabel"] p {
     font-size: 0.78rem;
     font-weight: 600;
     color: var(--sc-fog);
+    white-space: nowrap;
 }
 
 .sc-queue-step.done {
@@ -561,7 +660,7 @@ label[data-testid="stWidgetLabel"] p {
 }
 
 .sc-queue-line {
-    width: 2.2rem;
+    width: 2rem;
     height: 2px;
     background: var(--sc-line);
 }
@@ -573,7 +672,8 @@ label[data-testid="stWidgetLabel"] p {
 .sc-queue-row-end {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.5rem;
+    flex: 0 0 auto;
 }
 
 .sc-queue-pct {
@@ -602,28 +702,8 @@ label[data-testid="stWidgetLabel"] p {
     opacity: 1;
 }
 
-/* Floating / Header Export Button */
-div[class*="st-key-generate_video_button"] {
-    position: fixed !important;
-    top: 0.5rem;
-    right: 1.25rem;
-    z-index: 70;
-    width: auto !important;
-}
-
-div[class*="st-key-generate_video_button"] button {
-    background: var(--sc-signal) !important;
-    color: #fff !important;
-    border: 0 !important;
-    border-radius: 5px !important;
-    min-width: 5.5rem;
-    height: 2rem !important;
-    font-weight: 650 !important;
-    font-size: 0.85rem !important;
-}
-
 /* ==========================================================================
-   7. Home View & Project Cards
+   9. All Projects Page (Modern Smooth Cards & Clean Icon Actions)
    ========================================================================== */
 
 [data-testid="stApp"]:has([data-view="home"]) .st-key-editor_workspace {
@@ -634,54 +714,76 @@ div[class*="st-key-generate_video_button"] button {
     display: none !important;
 }
 
-.sc-project-card {
-    padding: 0.9rem;
+div[class*="st-key-card_container_"] {
+    background: var(--sc-coal);
     border: 1px solid var(--sc-line);
     border-radius: 10px;
-    background: var(--sc-coal);
+    padding: 0.85rem;
     box-shadow: var(--sc-card-shadow);
     transition: transform 0.18s ease, border-color 0.18s ease;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-.sc-project-card:hover {
+div[class*="st-key-card_container_"]:hover {
     transform: translateY(-2px);
     border-color: var(--sc-signal);
 }
 
+.sc-project-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
 .sc-project-card__thumb {
-    height: 6rem;
+    height: 5.5rem;
     border-radius: 6px;
     background: var(--sc-ash);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.65rem;
 }
 
-.sc-project-card h3 {
-    margin: 0 0 0.25rem !important;
+.sc-project-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--sc-fog);
+}
+
+.sc-project-card__status {
+    font-weight: 600;
+}
+
+/* Project Card Title Button */
+div[class*="st-key-open_title_"] button {
+    background: transparent !important;
+    border: none !important;
+    color: var(--sc-snow) !important;
     font-size: 0.9rem !important;
     font-weight: 650 !important;
-    color: var(--sc-snow) !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.35 !important;
+    text-align: left !important;
+    padding: 0.2rem 0 !important;
+    min-height: auto !important;
+    height: auto !important;
+    word-break: break-word !important;
+    white-space: normal !important;
 }
 
-.sc-project-card p {
-    margin: 0 0 0.4rem !important;
-    font-size: 0.75rem !important;
-    color: var(--sc-fog) !important;
+div[class*="st-key-open_title_"] button:hover {
+    color: var(--sc-signal) !important;
 }
 
-div[class*="st-key-open_project_"] button,
-div[class*="st-key-home_restore_"] button,
-div[class*="st-key-home_delete_"] button {
+div[class*="st-key-open_icon_"] button,
+div[class*="st-key-del_icon_"] button {
     height: 1.85rem !important;
     min-height: 1.85rem !important;
-    padding: 0 0.4rem !important;
-    font-size: 0.75rem !important;
+    padding: 0 !important;
     background: var(--sc-ash) !important;
     border: 1px solid var(--sc-line) !important;
     color: var(--sc-snow) !important;
@@ -689,23 +791,52 @@ div[class*="st-key-home_delete_"] button {
 }
 
 /* ==========================================================================
-   8. Settings Modal Popup (VS Code Vertical Sidebar Style)
+   10. Modal Popups (Centered in Page, Fixed Equal Height, No Text Truncation)
    ========================================================================== */
 
 div[data-testid="stDialog"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     background: var(--sc-dialog-backdrop) !important;
     backdrop-filter: blur(8px) !important;
     -webkit-backdrop-filter: blur(8px) !important;
 }
 
 div[data-testid="stDialog"] > div[role="dialog"] {
+    margin: auto !important;
+    position: relative !important;
+    top: auto !important;
     background: var(--sc-void) !important;
     border: 1px solid var(--sc-line) !important;
     border-radius: 12px !important;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45) !important;
     padding: 1.25rem 1.5rem !important;
-    max-width: 740px !important;
+    max-width: 820px !important;
+    width: 820px !important;
+    min-height: 540px !important;
+    height: 540px !important;
+    max-height: 85vh !important;
+    display: flex !important;
+    flex-direction: column !important;
     color: var(--sc-snow) !important;
+}
+
+div[data-testid="stDialog"] > div[role="dialog"] > div:last-child {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* Prevent text truncation in Settings Modal */
+div[data-testid="stDialog"] p,
+div[data-testid="stDialog"] label,
+div[data-testid="stDialog"] span,
+div[data-testid="stDialog"] div {
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-overflow: unset !important;
 }
 
 .sc-settings-nav-sidebar {
@@ -721,21 +852,17 @@ div[data-testid="stDialog"] > div[role="dialog"] {
     font-weight: 550 !important;
 }
 
-/* ==========================================================================
-   9. Responsive Breakpoints (Desktop / Tablet / Mobile)
-   ========================================================================== */
-
-@media (min-width: 701px) and (max-width: 1080px) {
-    .st-key-home_workspace [data-testid="stHorizontalBlock"] {
-        flex-wrap: wrap !important;
-        gap: 0.75rem !important;
-    }
-
-    .st-key-home_workspace [data-testid="stColumn"] {
-        flex: 1 1 calc(50% - 0.5rem) !important;
-        min-width: calc(50% - 0.5rem) !important;
-    }
+/* Settings Content Column scrollable */
+div[data-testid="stDialog"] [data-testid="stColumn"]:last-child {
+    overflow-y: auto !important;
+    height: 460px !important;
+    max-height: 460px !important;
+    padding-right: 0.5rem !important;
 }
+
+/* ==========================================================================
+   11. Responsive Breakpoints
+   ========================================================================== */
 
 @media (max-width: 700px) {
     .st-key-home_workspace [data-testid="stHorizontalBlock"],
@@ -744,19 +871,16 @@ div[data-testid="stDialog"] > div[role="dialog"] {
         gap: 0.75rem !important;
     }
 
-    .st-key-home_workspace [data-testid="stColumn"],
-    .st-key-editor_workspace [data-testid="stColumn"] {
-        width: 100% !important;
-        min-width: 100% !important;
-    }
-
-    .st-key-top_bar [data-testid="stHorizontalBlock"] {
-        flex-direction: column !important;
-        align-items: flex-start !important;
+    .st-key-editor_workspace {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
     }
 
     div[data-testid="stDialog"] > div[role="dialog"] {
         width: 96vw !important;
+        min-height: 420px !important;
+        height: auto !important;
         padding: 0.9rem !important;
     }
 }
