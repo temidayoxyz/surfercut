@@ -2123,14 +2123,27 @@ def _render_stage_surfaces(task_id, task):
     _maybe_handle_generation_complete(task_id, task)
     _render_preview_monitor(task_id, task)
     _render_generation_timeline(task_id, task)
+    if task_id:
+        _render_generation_logs(task_id)
 
 
 def _render_generation_logs(task_id):
     """渲染后台任务日志快照，不从工作线程访问 Streamlit 会话状态。"""
+    if not task_id:
+        return
     if config.ui.get("hide_log", True):
         return
 
     log_records = webui_task.get_task_logs(task_id)
+    if not log_records:
+        task_log_file = os.path.join(utils.task_dir(task_id), "task.log")
+        if os.path.isfile(task_log_file):
+            try:
+                with open(task_log_file, "r", encoding="utf-8", errors="ignore") as f:
+                    log_records = [line.strip() for line in f.readlines() if line.strip()]
+            except Exception:
+                pass
+
     if not log_records:
         return
 
@@ -2149,10 +2162,11 @@ def _render_generation_logs(task_id):
             f'<pre class="sc-pipeline__msg">{html.escape(message)}</pre>'
             "</li>"
         )
+    log_ico = _icon_img("lucide/terminal", "8b949e", 15)
     title = html.escape(tr("Pipeline Log"))
     st.markdown(
         f'<div class="sc-pipeline" aria-label="{title}">'
-        f'<p class="sc-pipeline__title">{title}</p>'
+        f'<p class="sc-pipeline__title">{log_ico}&nbsp; {title}</p>'
         f'<ol class="sc-pipeline__list">{"".join(items)}</ol>'
         "</div>",
         unsafe_allow_html=True,

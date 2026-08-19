@@ -725,6 +725,113 @@ div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb
 }
 
 /* ==========================================================================
+   Pipeline Logs Container (Rendered below Timeline)
+   ========================================================================== */
+
+.sc-pipeline {
+    background: var(--sc-coal);
+    border: 1px solid var(--sc-line);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-top: 0.65rem;
+    box-shadow: var(--sc-card-shadow);
+}
+
+.sc-pipeline__title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--sc-fog);
+    margin: 0 0 0.5rem 0 !important;
+    display: flex;
+    align-items: center;
+}
+
+.sc-pipeline__list {
+    list-style: none;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.76rem;
+}
+
+.sc-pipeline__step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    background: var(--sc-ash);
+    color: var(--sc-snow);
+}
+
+.sc-pipeline__tick {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+    background: var(--sc-signal);
+}
+
+.sc-pipeline__step--ERROR .sc-pipeline__tick {
+    background: var(--sc-danger);
+}
+
+.sc-pipeline__step--WARNING .sc-pipeline__tick {
+    background: #f59e0b;
+}
+
+.sc-pipeline__step--SUCCESS .sc-pipeline__tick {
+    background: var(--sc-accent-green);
+}
+
+.sc-pipeline__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--sc-fog);
+    font-size: 0.72rem;
+    flex-shrink: 0;
+}
+
+.sc-pipeline__level {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    padding: 0.05rem 0.25rem;
+    border-radius: 3px;
+    background: var(--sc-line);
+}
+
+.sc-pipeline__step--ERROR .sc-pipeline__level {
+    color: var(--sc-danger);
+}
+
+.sc-pipeline__step--WARNING .sc-pipeline__level {
+    color: #f59e0b;
+}
+
+.sc-pipeline__msg {
+    margin: 0 !important;
+    padding: 0 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    color: var(--sc-snow);
+    background: transparent !important;
+    border: none !important;
+    line-height: 1.35 !important;
+}
+
+/* ==========================================================================
    9. All Projects Page (Modern Smooth Cards & Clean Icon Actions)
    ========================================================================== */
 
