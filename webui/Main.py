@@ -1522,16 +1522,14 @@ def _render_top_bar():
                     st.rerun()
 
             if view == "editor":
-                if st.button(
+                st.button(
                     tr("Generate Video"),
                     key="generate_video_top_button",
                     type="primary",
                     icon=":material/movie:",
                     width="content",
-                ):
-                    _prepare_generation_task()
-                    st.session_state["trigger_generate_video"] = True
-                    st.rerun()
+                    on_click=_prepare_generation_task,
+                )
 
 
 support_locales = [
@@ -5636,9 +5634,13 @@ def _render_generation_controls(
         # 已经得到明确处理，清除标记，避免后续普通生成继续显示旧提示。
         st.session_state.pop("task_restore_upload_requirements", None)
 
-    start_button = st.session_state.pop("trigger_generate_video", False)
+    start_button = bool(st.session_state.get("generate_video_top_button", False))
     render_onboarding_tour()
     if start_button:
+        if not params.video_subject and st.session_state.get("video_subject"):
+            params.video_subject = str(st.session_state.get("video_subject", "")).strip()
+        if not params.video_script and st.session_state.get("video_script"):
+            params.video_script = str(st.session_state.get("video_script", "")).strip()
         _save_runtime_config()
         task_id = st.session_state.get("pending_generation_task_id") or str(uuid4())
         _add_active_generation_task(
