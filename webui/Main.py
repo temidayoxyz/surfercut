@@ -2144,10 +2144,8 @@ def _render_generation_logs(task_id):
             except Exception:
                 pass
 
-    if not log_records:
-        return
-
-    copy_payload = json.dumps("\n".join(log_records))
+    raw_logs = "\n".join(log_records)
+    escaped_logs = html.escape(raw_logs, quote=True)
 
     items = []
     for raw in log_records:
@@ -2169,7 +2167,7 @@ def _render_generation_logs(task_id):
         f'<div class="sc-pipeline" aria-label="{title}">'
         f'  <div class="sc-pipeline-header">'
         f'    <span class="sc-pipeline__title">{log_ico}&nbsp; {title}</span>'
-        f'    <button class="sc-pipeline__copy-btn" onclick="navigator.clipboard.writeText({html.escape(copy_payload, quote=False)}); this.classList.add(\'copied\'); setTimeout(() => this.classList.remove(\'copied\'), 2000)">'
+        f'    <button class="sc-pipeline__copy-btn" data-logs="{escaped_logs}" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-logs\')); const s=this.querySelector(\'span\'); s.innerText=\'Copied!\'; setTimeout(()=>{{s.innerText=\'Copy\';}},2000);">'
         f'      {copy_ico} <span>Copy</span>'
         f'    </button>'
         f'  </div>'

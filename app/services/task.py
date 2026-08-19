@@ -323,12 +323,12 @@ def generate_terms(task_id, params, video_script):
         logger.debug(f"video terms: {utils.to_json(video_terms)}")
 
     if not video_terms:
-        _mark_task_failed(
-            task_id,
-            "terms",
-            "failed to generate video search terms",
-        )
-        return None
+        logger.warning("terms generation returned empty; generating heuristic fallback search terms")
+        words = [w.strip(".,!?:;\"'()[]{}") for w in re.split(r"[\s,]+", params.video_subject or "") if len(w) > 3]
+        fallback = [w for w in words if w.lower() not in {"this", "that", "with", "from", "have", "they", "will", "what", "when", "your", "about"}]
+        if len(fallback) < 5:
+            fallback.extend(["nature landscape", "scenic view", "inspirational light", "ambient horizon", "peaceful atmosphere"])
+        video_terms = fallback[:5]
 
     # 可选的 TwelveLabs Marengo 语义重排：未启用时返回原顺序，无任何副作用。
     # 顺序匹配模式下关键词顺序本身就是脚本叙事顺序，必须保持原样，故跳过。
