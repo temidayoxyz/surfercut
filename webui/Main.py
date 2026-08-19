@@ -2147,6 +2147,8 @@ def _render_generation_logs(task_id):
     if not log_records:
         return
 
+    copy_payload = json.dumps("\n".join(log_records))
+
     items = []
     for raw in log_records:
         timestamp, level, message = _split_log_record(raw)
@@ -2155,20 +2157,24 @@ def _render_generation_logs(task_id):
         items.append(
             f'<li class="sc-pipeline__step sc-pipeline__step--{html.escape(level_token)}">'
             f'<span class="sc-pipeline__tick" aria-hidden="true"></span>'
-            f'<span class="sc-pipeline__meta">'
-            f'<time datetime="{html.escape(timestamp)}">{clock}</time>'
+            f'<span class="sc-pipeline__time">{clock}</span>'
             f'<span class="sc-pipeline__level">{html.escape(level_token)}</span>'
-            "</span>"
-            f'<pre class="sc-pipeline__msg">{html.escape(message)}</pre>'
+            f'<span class="sc-pipeline__msg">{html.escape(message)}</span>'
             "</li>"
         )
     log_ico = _icon_img("lucide/terminal", "8b949e", 15)
+    copy_ico = _icon_img("lucide/copy", "8b949e", 14)
     title = html.escape(tr("Pipeline Log"))
     st.markdown(
         f'<div class="sc-pipeline" aria-label="{title}">'
-        f'<p class="sc-pipeline__title">{log_ico}&nbsp; {title}</p>'
-        f'<ol class="sc-pipeline__list">{"".join(items)}</ol>'
-        "</div>",
+        f'  <div class="sc-pipeline-header">'
+        f'    <span class="sc-pipeline__title">{log_ico}&nbsp; {title}</span>'
+        f'    <button class="sc-pipeline__copy-btn" onclick="navigator.clipboard.writeText({html.escape(copy_payload, quote=False)}); this.classList.add(\'copied\'); setTimeout(() => this.classList.remove(\'copied\'), 2000)">'
+        f'      {copy_ico} <span>Copy</span>'
+        f'    </button>'
+        f'  </div>'
+        f'  <ol class="sc-pipeline__list">{"".join(items)}</ol>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 

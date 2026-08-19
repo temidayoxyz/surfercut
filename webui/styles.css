@@ -737,38 +737,75 @@ div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb
     box-shadow: var(--sc-card-shadow);
 }
 
+.sc-pipeline-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
 .sc-pipeline__title {
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--sc-fog);
-    margin: 0 0 0.5rem 0 !important;
+    margin: 0 !important;
     display: flex;
     align-items: center;
+}
+
+.sc-pipeline__copy-btn {
+    background: var(--sc-ash);
+    border: 1px solid var(--sc-line);
+    border-radius: 4px;
+    color: var(--sc-fog-light);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.sc-pipeline__copy-btn:hover {
+    background: var(--sc-line);
+    color: var(--sc-snow);
+    border-color: var(--sc-fog);
+}
+
+.sc-pipeline__copy-btn.copied {
+    background: var(--sc-accent-green-tint) !important;
+    color: var(--sc-accent-green) !important;
+    border-color: var(--sc-accent-green) !important;
 }
 
 .sc-pipeline__list {
     list-style: none;
     margin: 0 !important;
     padding: 0 !important;
-    max-height: 220px;
+    max-height: 240px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
-    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.76rem;
+    gap: 0.3rem;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace !important;
+    font-size: 0.75rem !important;
 }
 
 .sc-pipeline__step {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    padding: 0.25rem 0.4rem;
+    padding: 0.28rem 0.45rem;
     border-radius: 4px;
     background: var(--sc-ash);
     color: var(--sc-snow);
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: 1.4 !important;
 }
 
 .sc-pipeline__tick {
@@ -792,12 +829,10 @@ div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb
     background: var(--sc-accent-green);
 }
 
-.sc-pipeline__meta {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
+.sc-pipeline__time {
     color: var(--sc-fog);
     font-size: 0.72rem;
+    font-family: inherit;
     flex-shrink: 0;
 }
 
@@ -805,17 +840,26 @@ div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb
     font-weight: 700;
     text-transform: uppercase;
     font-size: 0.68rem;
+    font-family: inherit;
     padding: 0.05rem 0.25rem;
     border-radius: 3px;
     background: var(--sc-line);
+    flex-shrink: 0;
 }
 
 .sc-pipeline__step--ERROR .sc-pipeline__level {
     color: var(--sc-danger);
+    background: rgba(239, 68, 68, 0.15);
 }
 
 .sc-pipeline__step--WARNING .sc-pipeline__level {
     color: #f59e0b;
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.sc-pipeline__step--SUCCESS .sc-pipeline__level {
+    color: var(--sc-accent-green);
+    background: rgba(16, 185, 129, 0.15);
 }
 
 .sc-pipeline__msg {
@@ -826,9 +870,8 @@ div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb
     font-family: inherit !important;
     font-size: inherit !important;
     color: var(--sc-snow);
-    background: transparent !important;
-    border: none !important;
-    line-height: 1.35 !important;
+    line-height: 1.4 !important;
+    flex: 1;
 }
 
 /* ==========================================================================
