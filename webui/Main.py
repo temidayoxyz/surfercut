@@ -1353,13 +1353,13 @@ def _render_theme_selector():
         options=options,
         index=idx,
         format_func=lambda value: {
-            "light": f"☀️ {tr('Theme Light')}",
-            "dark": f"🌙 {tr('Theme Dark')}",
-            "system": f"💻 {tr('Theme System')}",
+            "light": tr("Theme Light"),
+            "dark": tr("Theme Dark"),
+            "system": tr("Theme System"),
         }.get(value, value),
         key="ui_theme_selector",
         label_visibility="collapsed",
-        width=120,
+        width=110,
     )
     if selected_theme:
         normalized = _normalize_theme(selected_theme)
@@ -1367,7 +1367,6 @@ def _render_theme_selector():
         if normalized != previous_theme:
             _set_runtime_config("ui", "theme", normalized)
             _save_runtime_config()
-            st.rerun()
 
 
 def _render_brand(available_update: str | None = None):

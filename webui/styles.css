@@ -383,6 +383,20 @@ div[class*="st-key-generate_video_top_button"] button {
     gap: 0.35rem !important;
 }
 
+/* Theme Selector Iconify Icon Prefix */
+div[data-testid="stSelectbox"]:has(input[aria-label*="Theme"]) div[data-baseweb="select"] > div::before,
+div[data-testid="stSelectbox"]:has(input[aria-label*="外观"]) div[data-baseweb="select"] > div::before {
+    content: "";
+    display: inline-block;
+    width: 0.95rem;
+    height: 0.95rem;
+    margin-left: 0.35rem;
+    margin-right: 0.2rem;
+    background-color: currentColor;
+    -webkit-mask: url("https://api.iconify.design/lucide/sun-moon.svg") no-repeat center / contain;
+    mask: url("https://api.iconify.design/lucide/sun-moon.svg") no-repeat center / contain;
+}
+
 /* ==========================================================================
    6. Studio Editor 3-Column Layout (Sticky Tabs & Scrollable Content)
    ========================================================================== */
