@@ -10,7 +10,8 @@
 /app/utils/__pycache__/
 /*/__pycache__/*
 .vscode
-/**/.streamlit
+/**/.streamlit/**
+!/**/.streamlit/config.toml
 __pycache__
 logs/
 

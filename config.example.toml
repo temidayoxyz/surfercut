@@ -1,4 +1,4 @@
-# MoneyPrinterTurbo configuration example.
+# SurferCut configuration example.
 # The app copies this file to config.toml on first run. Keep API keys and other
 # credentials in config.toml; do not commit your local config.toml.
 
@@ -26,7 +26,7 @@ hide_config = false
 # independently generated script candidates. The WebUI integration is optional.
 script_generation_backend = "local"
 
-# LoomLoom Public API settings. The WebUI supports the public MoneyPrinterTurbo
+# LoomLoom Public API settings. The WebUI supports the public SurferCut
 # SkillBot below out of the box. Configure the key in the WebUI or a private
 # config.toml, and never commit a real key. The fixed SkillBot accepts subject,
 # requirements, and candidateIndex for each row
@@ -381,6 +381,9 @@ voices = ["default-Female"]
 [ui]
 # Hide generation logs in the WebUI.
 hide_log = false
+
+# WebUI appearance: "system" follows the OS, or force "light" / "dark".
+theme = "system"
 
 # Open the task folder automatically after video generation completes.
 # 视频生成完成后是否自动打开任务目录；关闭后仍可在任务管理中手动打开。

@@ -1,3 +1,8 @@
+/* ==========================================================================
+   SurferCut Studio Design System & Responsive Styles (Dynamic & Pixel-Perfect)
+   ========================================================================== */
+
+/* 1. Hide Streamlit Platform Chrome */
 header[data-testid="stHeader"],
 div[data-testid="stToolbar"],
 div[data-testid="stDecoration"],
@@ -7,433 +12,743 @@ div[data-testid="stSkillsNudge"] {
     display: none !important;
 }
 
-div[data-testid="stMainBlockContainer"] {
-    padding-top: 0.5rem !important;
+#sc-theme-anchor,
+[data-testid="stElementContainer"]:has(#sc-theme-anchor) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-h1 {
+div[data-testid="stMainBlockContainer"] {
+    padding: 0.4rem 1rem 2rem !important;
+    max-width: 100% !important;
+}
+
+h1, h2, h3, h4, p {
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
 
-/* Streamlit 默认让标签中的帮助区域占据剩余宽度，导致问号按钮贴到控件最右侧。
-   帮助提示在语义上从属于标签文字，因此取消该区域的伸展，并用固定小间距让
-   问号紧跟标签；没有 help 参数的标签不存在这个 div，不会受到影响。 */
-label[data-testid="stWidgetLabel"] > div {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    margin-left: 0.35rem !important;
+/* ==========================================================================
+   2. Theme Variables: Dark (Default Studio), Light & System
+   ========================================================================== */
+
+[data-testid="stApp"] {
+    /* Dark Studio Theme (Matches Target Screenshot) */
+    --sc-void: #12141a;
+    --sc-coal: #1a1d24;
+    --sc-ash: #232732;
+    --sc-line: #2d3240;
+    --sc-line-light: #3a4153;
+    --sc-fog: #8b949e;
+    --sc-fog-light: #b1bac4;
+    --sc-snow: #ffffff;
+    --sc-signal: #2563eb;
+    --sc-signal-hover: #1d4ed8;
+    --sc-signal-tint: rgba(37, 99, 235, 0.2);
+    --sc-accent-green: #10b981;
+    --sc-accent-green-tint: rgba(16, 185, 129, 0.15);
+    --sc-danger: #ef4444;
+    --sc-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --sc-dialog-backdrop: rgba(0, 0, 0, 0.75);
+
+    --background-color: var(--sc-void);
+    --secondary-background-color: var(--sc-coal);
+    --text-color: var(--sc-snow);
+    --primary-color: var(--sc-signal);
+
+    background: var(--sc-void) !important;
+    color: var(--sc-snow);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* 配音方式位于四列布局中的窄面板。Streamlit 的 stretch 模式默认让单个分段
-   按钮接近半行宽，三个选项会换成两行；这里仅对该控件改为三等分，并压缩
-   水平内边距，保持其它 segmented control 的原生尺寸不变。 */
-div[class*="st-key-voice_mode_control"] [role="radiogroup"] {
-    flex-wrap: nowrap !important;
+/* High-Contrast Light Theme */
+[data-testid="stApp"]:has([data-theme="light"]) {
+    --sc-void: #f6f8fa;
+    --sc-coal: #ffffff;
+    --sc-ash: #f0f2f5;
+    --sc-line: #d0d7de;
+    --sc-line-light: #e1e4e8;
+    --sc-fog: #57606a;
+    --sc-fog-light: #6e7781;
+    --sc-snow: #1f2328;
+    --sc-signal: #2563eb;
+    --sc-signal-hover: #1d4ed8;
+    --sc-signal-tint: rgba(37, 99, 235, 0.12);
+    --sc-accent-green: #059669;
+    --sc-accent-green-tint: rgba(5, 150, 105, 0.12);
+    --sc-danger: #cf222e;
+    --sc-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    --sc-dialog-backdrop: rgba(15, 23, 42, 0.5);
 }
 
-div[class*="st-key-voice_mode_control"] [role="radiogroup"] > button {
-    flex: 1 1 0 !important;
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 0.25rem !important;
-}
-
-div[class*="st-key-voice_mode_control"] [role="radiogroup"] > button p {
-    overflow: hidden !important;
-    font-size: 0.8rem !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
-/* 顶部品牌区将项目名和弱化版本号放在同一基线。项目名称仍是页面唯一的 h1；
-   版本号本身作为项目链接，避免增加独立图标而干扰标题的视觉层级。 */
-.mpt-brand {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    color: inherit;
-    line-height: 1.15;
-}
-
-/* Streamlit 会在自定义 h1 内增加一层文本容器，实际的行内布局需要作用在
-   这层容器上，才能稳定控制项目名和版本号的间距。 */
-.mpt-brand > span:first-child {
-    display: flex;
-    align-items: baseline;
-    gap: 0.65rem;
-    min-width: 0;
-}
-
-.mpt-brand__name {
-    min-width: 0;
-    font-size: 2.75rem;
-    font-weight: 700;
-    letter-spacing: 0;
-    white-space: nowrap;
-}
-
-.mpt-brand__version {
-    flex: 0 0 auto;
-    font-size: 1rem;
-    font-weight: 600;
-    color: inherit !important;
-    opacity: 0.72;
-    text-decoration: none !important;
-    white-space: nowrap;
-}
-
-.mpt-brand__version:hover {
-    color: inherit !important;
-    opacity: 1;
-    text-decoration: underline !important;
-    text-underline-offset: 0.18em;
-}
-
-.mpt-brand__version:focus-visible {
-    outline: 2px solid rgba(255, 75, 75, 0.48);
-    outline-offset: 2px;
-}
-
-/* 新版本提醒只在确有正式版本更新时出现。使用文字链接而不是按钮或横幅，
-   让它保持可发现性，同时不抢占项目标题和主要操作入口的视觉层级。 */
-.mpt-brand__update {
-    flex: 0 0 auto;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #d94848 !important;
-    text-decoration: none !important;
-    white-space: nowrap;
-}
-
-.mpt-brand__update:hover {
-    text-decoration: underline !important;
-    text-underline-offset: 0.18em;
-}
-
-.mpt-brand__update:focus-visible {
-    outline: 2px solid rgba(255, 75, 75, 0.48);
-    outline-offset: 2px;
+/* System Theme Resolution */
+@media (prefers-color-scheme: light) {
+    [data-testid="stApp"]:has([data-theme="system"]) {
+        --sc-void: #f6f8fa;
+        --sc-coal: #ffffff;
+        --sc-ash: #f0f2f5;
+        --sc-line: #d0d7de;
+        --sc-line-light: #e1e4e8;
+        --sc-fog: #57606a;
+        --sc-fog-light: #6e7781;
+        --sc-snow: #1f2328;
+        --sc-signal: #2563eb;
+        --sc-signal-hover: #1d4ed8;
+        --sc-signal-tint: rgba(37, 99, 235, 0.12);
+        --sc-accent-green: #059669;
+        --sc-accent-green-tint: rgba(5, 150, 105, 0.12);
+        --sc-danger: #cf222e;
+        --sc-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        --sc-dialog-backdrop: rgba(15, 23, 42, 0.5);
+    }
 }
 
 @media (prefers-color-scheme: dark) {
-    .mpt-brand__update {
-        color: #ff6b6b !important;
+    [data-testid="stApp"]:has([data-theme="system"]) {
+        --sc-void: #12141a;
+        --sc-coal: #1a1d24;
+        --sc-ash: #232732;
+        --sc-line: #2d3240;
+        --sc-line-light: #3a4153;
+        --sc-fog: #8b949e;
+        --sc-fog-light: #b1bac4;
+        --sc-snow: #ffffff;
+        --sc-signal: #2563eb;
+        --sc-signal-hover: #1d4ed8;
+        --sc-signal-tint: rgba(37, 99, 235, 0.2);
+        --sc-accent-green: #10b981;
+        --sc-accent-green-tint: rgba(16, 185, 129, 0.15);
+        --sc-danger: #ef4444;
+        --sc-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        --sc-dialog-backdrop: rgba(0, 0, 0, 0.75);
     }
 }
 
-/* Streamlit 会自动给 h1 追加一个标题锚点。品牌区已有版本号项目链接，额外的
-   标题锚点没有实际价值，因此只在这个标题内隐藏，避免窄屏出现多余图标。 */
-.mpt-brand > [data-testid="stHeaderActionElements"] {
-    display: none !important;
+[data-testid="stApp"] [data-testid="stMain"],
+[data-testid="stApp"] [data-testid="stMainBlockContainer"] {
+    background: var(--sc-void) !important;
+    color: var(--sc-snow);
 }
 
-/* 顶部任务入口由 st.fragment 定时刷新，Streamlit 会为 Fragment 自动生成一个
-   占满整行的 LayoutWrapper。这里只收缩该包装层，保证右侧操作区按内容紧凑排列。 */
-.st-key-top_bar_actions
-    > div[data-testid="stLayoutWrapper"]:first-child {
-    flex: 0 0 auto !important;
-    width: fit-content !important;
+/* ==========================================================================
+   3. Native Streamlit Form & Controls Theming (Dynamic Light/Dark Mode)
+   ========================================================================== */
+
+/* Inputs & Textareas */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+textarea,
+div[data-baseweb="input"] > div,
+div[data-baseweb="textarea"] > div {
+    background: var(--sc-coal) !important;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 6px !important;
+    color: var(--sc-snow) !important;
+    font-size: 0.85rem !important;
 }
 
-@media (max-width: 700px) {
-    .mpt-brand > span:first-child {
-        gap: 0.45rem;
-    }
-
-    .mpt-brand__name {
-        font-size: 1.875rem;
-    }
-
-    .mpt-brand__version {
-        font-size: 0.875rem;
-    }
-
-    .mpt-brand__update {
-        font-size: 0.75rem;
-    }
-
+input[type="text"]:focus,
+input[type="password"]:focus,
+div[data-baseweb="input"]:focus-within > div,
+div[data-baseweb="textarea"]:focus-within > div {
+    border-color: var(--sc-signal) !important;
+    box-shadow: 0 0 0 2px var(--sc-signal-tint) !important;
 }
 
-@media (max-width: 480px) {
-    .mpt-brand > span:first-child {
-        gap: 0.35rem;
-    }
-
-    .mpt-brand__name {
-        font-size: 1.5rem;
-    }
-
-    .mpt-brand__version {
-        font-size: 0.75rem;
-    }
-
-    .mpt-brand__update {
-        font-size: 0.6875rem;
-    }
-
+/* Selectbox Dropdowns & Chevron Icons */
+div[data-baseweb="select"] > div {
+    background: var(--sc-coal) !important;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 6px !important;
+    color: var(--sc-snow) !important;
+    font-size: 0.85rem !important;
 }
 
-/* 高级设置属于内容展开入口，不是执行操作。保留 Streamlit 原生 expander 的
-   语义和键盘交互，只在带 advanced_settings_ key 的局部容器内移除卡片边框，
-   避免与紧邻的 AI 生成按钮形成两个连续大按钮的视觉干扰。 */
-div[class*="st-key-advanced_settings_"] details {
-    border: 0 !important;
-    border-radius: 4px !important;
-    background: transparent !important;
+div[data-baseweb="select"] span {
+    color: var(--sc-snow) !important;
 }
 
-div[class*="st-key-advanced_settings_"] details > summary {
-    min-height: 2.25rem !important;
-    padding: 0.35rem 0.25rem !important;
-    color: inherit !important;
-    opacity: 0.78;
+/* Dynamic dropdown icons */
+div[data-baseweb="select"] svg {
+    fill: var(--sc-fog) !important;
 }
 
-div[class*="st-key-advanced_settings_"] details > summary:hover {
-    opacity: 1;
-    background: color-mix(
-        in srgb,
-        currentColor 6%,
-        transparent
-    ) !important;
+div[data-baseweb="popover"],
+ul[role="listbox"] {
+    background: var(--sc-coal) !important;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--sc-card-shadow) !important;
 }
 
-/* 展开后让标题和内容共享同一背景，视觉上形成连续区域；折叠状态仍保持原有的
-   透明轻量入口，不额外占用页面层级。 */
-div[class*="st-key-advanced_settings_"] details[open] > summary {
-    border-radius: 4px 4px 0 0 !important;
-    opacity: 1;
-    background: color-mix(
-        in srgb,
-        currentColor 5%,
-        transparent
-    ) !important;
+ul[role="listbox"] li {
+    background: var(--sc-coal) !important;
+    color: var(--sc-snow) !important;
+    font-size: 0.85rem !important;
 }
 
-div[class*="st-key-advanced_settings_"] details > summary:focus {
-    background: color-mix(
-        in srgb,
-        currentColor 5%,
-        transparent
-    ) !important;
-    box-shadow: none !important;
-    outline: none !important;
+ul[role="listbox"] li:hover,
+ul[role="listbox"] li[aria-selected="true"] {
+    background: var(--sc-ash) !important;
+    color: var(--sc-snow) !important;
 }
 
-/* 键盘操作使用标题下划线作为焦点反馈，不再绘制任何外框，确保展开区域在视觉
-   上完全无边框，同时仍能让键盘用户识别当前焦点。 */
-div[class*="st-key-advanced_settings_"] details > summary:focus-visible {
-    box-shadow: none !important;
+/* Streamlit Buttons */
+div[data-testid="stButton"] > button {
+    border-radius: 6px !important;
+    font-size: 0.85rem !important;
+    font-weight: 550 !important;
+    padding: 0.4rem 0.85rem !important;
+    min-height: 2.1rem !important;
+    transition: all 0.15s ease !important;
 }
 
-div[class*="st-key-advanced_settings_"] details > summary:focus-visible p {
-    text-decoration: underline !important;
-    text-underline-offset: 0.18em;
+/* Secondary Buttons */
+div[data-testid="stButton"] > button[kind="secondary"] {
+    background: var(--sc-coal) !important;
+    border: 1px solid var(--sc-line) !important;
+    color: var(--sc-snow) !important;
 }
 
-div[class*="st-key-advanced_settings_"] details > summary p {
-    font-size: 0.9rem !important;
+div[data-testid="stButton"] > button[kind="secondary"]:hover {
+    background: var(--sc-ash) !important;
+    border-color: var(--sc-fog) !important;
+    color: var(--sc-snow) !important;
+}
+
+/* Primary Button */
+div[data-testid="stButton"] > button[kind="primary"] {
+    background: var(--sc-signal) !important;
+    border: 1px solid var(--sc-signal) !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+div[data-testid="stButton"] > button[kind="primary"]:hover {
+    background: var(--sc-signal-hover) !important;
+    box-shadow: 0 2px 8px var(--sc-signal-tint) !important;
+}
+
+/* Sliders */
+div[data-testid="stSlider"] label {
+    color: var(--sc-snow) !important;
+    font-size: 0.82rem !important;
     font-weight: 500 !important;
 }
 
-/* 内容区与展开标题无缝衔接，不使用任何边框，仅通过统一背景和内边距表达
-   控件从属于高级设置，避免出现嵌套卡片或割裂的两段式结构。 */
-div[class*="st-key-advanced_settings_"] div[data-testid="stExpanderDetails"] {
-    margin-top: 0 !important;
-    padding: 0.75rem 0.75rem 0.85rem 1rem !important;
-    border: 0 !important;
-    border-radius: 0 0 4px 4px !important;
-    background: color-mix(
-        in srgb,
-        currentColor 5%,
-        transparent
-    ) !important;
+div[data-testid="stSlider"] div[role="slider"] {
+    background-color: var(--sc-signal) !important;
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3) !important;
 }
 
-/* 任务管理 popover 需要固定宽度，避免内容从空状态、列表状态切换时
-   反复改变宽度造成页面抖动。宽度仍保留视口约束，兼容窄屏。 */
-div[data-testid="stPopoverBody"] {
-    width: min(860px, calc(100vw - 48px)) !important;
-    max-width: min(860px, calc(100vw - 48px)) !important;
+/* Checkboxes */
+div[data-testid="stCheckbox"] label {
+    color: var(--sc-snow) !important;
+    font-size: 0.85rem !important;
 }
 
-div[data-testid="stPopoverBody"] div[data-testid="stVerticalBlock"] {
-    width: 100% !important;
+div[data-testid="stCheckbox"] span[data-checked="true"] {
+    background-color: var(--sc-signal) !important;
+    border-color: var(--sc-signal) !important;
 }
 
-/* 任务管理列表保留 Streamlit 原生布局，只做轻量压缩，避免每一行过高。
-   通过 task_row_ key 限定作用范围，避免影响其它配置面板的 container。 */
-div[class*="st-key-task_row_"] {
-    margin-bottom: 0.18rem !important;
+/* Labels */
+label[data-testid="stWidgetLabel"] p {
+    color: var(--sc-snow) !important;
+    font-size: 0.82rem !important;
+    font-weight: 550 !important;
+    margin-bottom: 0.2rem !important;
 }
 
-div[class*="st-key-task_row_"] div[data-testid="stVerticalBlockBorderWrapper"] {
-    padding: 0.18rem 0.6rem !important;
+/* ==========================================================================
+   4. Top Bar Header & Navigation
+   ========================================================================== */
+
+.st-key-top_bar {
+    margin: 0 0 0.5rem !important;
+    padding: 0.25rem 0 0.55rem !important;
+    border-bottom: 1px solid var(--sc-line);
 }
 
-div[class*="st-key-task_row_"] div[data-testid="stElementContainer"],
-div[class*="st-key-task_row_"] div[data-testid="stMarkdown"] {
-    margin-bottom: 0 !important;
+.sc-topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
 }
 
-div[class*="st-key-task_row_"] div[data-testid="stMarkdown"] {
+.sc-brand-title {
+    font-size: 1.35rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    color: var(--sc-snow);
+}
+
+.sc-nav-item {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--sc-fog);
+    text-decoration: none !important;
+    padding-bottom: 0.25rem;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.sc-nav-item:hover {
+    color: var(--sc-snow);
+}
+
+.sc-nav-item.is-active {
+    color: var(--sc-snow);
+    border-bottom: 2px solid var(--sc-snow);
+}
+
+.sc-crumb {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--sc-fog);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sc-crumb strong {
+    color: var(--sc-snow);
+    font-weight: 650;
+}
+
+.st-key-top_bar_actions {
     display: flex !important;
     align-items: center !important;
-    min-height: 1.75rem !important;
+    gap: 0.5rem !important;
 }
 
-div[class*="st-key-task_row_"] div[data-testid="stMarkdownContainer"] {
-    display: flex !important;
-    align-items: center !important;
-    margin-bottom: 0 !important;
-}
+/* ==========================================================================
+   5. Studio Editor Tabs with Icons & Green Highlights (Target Screenshot Match)
+   ========================================================================== */
 
-div[class*="st-key-task_row_"] p {
-    margin-bottom: 0 !important;
-    line-height: 1.25 !important;
-}
-
-div[class*="st-key-task_row_"] button[kind="secondary"] {
-    position: relative !important;
-    min-height: 1.75rem !important;
-    height: 1.75rem !important;
-    padding: 0.1rem 0.3rem !important;
-}
-
-/* 按钮文字视觉隐藏后，Streamlit 仍会保留图标与文字之间的默认间距，导致
-   单独图标向左偏移。清除该间距并让内容层占满按钮，确保操作图标严格居中。 */
-div[class*="st-key-task_row_"]
-    button[kind="secondary"]
-    span[data-has-shortcut] {
-    width: 100% !important;
+.st-key-editor_workspace div[data-testid="stTabs"] [role="tablist"] {
+    border-bottom: 1px solid var(--sc-line) !important;
     gap: 0 !important;
-    justify-content: center !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0.75rem !important;
+    background: transparent !important;
 }
 
-/* 行内操作保留可访问的按钮名称，但视觉上只显示图标。使用屏幕阅读器可见的
-   隐藏方式，而不是 display:none，确保每个操作仍能被正确朗读。 */
-div[class*="st-key-task_row_"] button[kind="secondary"] p {
-    position: absolute !important;
-    width: 1px !important;
-    height: 1px !important;
+.st-key-editor_workspace div[data-testid="stTabs"] [role="tab"] {
+    color: var(--sc-fog) !important;
+    font-size: 0.82rem !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+    padding: 0.55rem 1.2rem !important;
+    border-radius: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    transition: all 0.15s ease !important;
+}
+
+.st-key-editor_workspace div[data-testid="stTabs"] [role="tab"]:hover {
+    color: var(--sc-snow) !important;
+}
+
+/* Tab Icons using CSS masks for automatic theme adaptation */
+/* Left Tabs: 1=SCRIPT, 2=SUBTITLES */
+.st-key-editor_workspace [data-testid="stColumn"]:first-child div[data-testid="stTabs"] [role="tab"]:nth-child(1)::before {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    -webkit-mask: url("https://api.iconify.design/lucide/file-text.svg") no-repeat center / contain;
+    mask: url("https://api.iconify.design/lucide/file-text.svg") no-repeat center / contain;
+}
+
+.st-key-editor_workspace [data-testid="stColumn"]:first-child div[data-testid="stTabs"] [role="tab"]:nth-child(2)::before {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    -webkit-mask: url("https://api.iconify.design/lucide/captions.svg") no-repeat center / contain;
+    mask: url("https://api.iconify.design/lucide/captions.svg") no-repeat center / contain;
+}
+
+/* Right Tabs: 1=VIDEO, 2=AUDIO */
+.st-key-editor_workspace [data-testid="stColumn"]:last-child div[data-testid="stTabs"] [role="tab"]:nth-child(1)::before {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    -webkit-mask: url("https://api.iconify.design/lucide/clapperboard.svg") no-repeat center / contain;
+    mask: url("https://api.iconify.design/lucide/clapperboard.svg") no-repeat center / contain;
+}
+
+.st-key-editor_workspace [data-testid="stColumn"]:last-child div[data-testid="stTabs"] [role="tab"]:nth-child(2)::before {
+    content: "";
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    -webkit-mask: url("https://api.iconify.design/lucide/audio-lines.svg") no-repeat center / contain;
+    mask: url("https://api.iconify.design/lucide/audio-lines.svg") no-repeat center / contain;
+}
+
+/* Emerald Green Active Tab State */
+.st-key-editor_workspace div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    color: var(--sc-accent-green) !important;
+    border-bottom: 2px solid var(--sc-accent-green) !important;
+    background: transparent !important;
+}
+
+/* Panel Containers */
+.st-key-editor_workspace .st-key-panel_script,
+.st-key-editor_workspace .st-key-panel_subtitles,
+.st-key-editor_workspace .st-key-panel_video,
+.st-key-editor_workspace .st-key-panel_audio {
+    background: var(--sc-coal) !important;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 8px !important;
+    padding: 0.85rem !important;
+}
+
+.st-key-editor_workspace div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: transparent !important;
+    border: none !important;
     padding: 0 !important;
-    margin: -1px !important;
-    overflow: hidden !important;
-    clip: rect(0, 0, 0, 0) !important;
-    clip-path: inset(50%) !important;
-    white-space: nowrap !important;
 }
 
+/* ==========================================================================
+   6. Center Video Preview & Generation Queue Stepper
+   ========================================================================== */
 
-/* 中等宽度下将四个设置面板调整为 2×2，避免每列过窄导致标签和按钮频繁换行。 */
-@media (min-width: 701px) and (max-width: 1100px) {
-    .mpt-brand__name {
-        font-size: 2.25rem;
-    }
+.sc-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0.2rem 0.6rem;
+}
 
-    .mpt-brand__version {
-        font-size: 0.875rem;
-    }
+.sc-preview-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--sc-fog);
+    text-transform: uppercase;
+}
 
-    div[class*="st-key-main_settings_grid"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"] {
+.sc-preview-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    opacity: 0.8;
+}
+
+/* Preview Monitor Viewport (16:9 and 9:16 support) */
+.sc-monitor {
+    border: 1px solid var(--sc-line);
+    border-radius: 8px;
+    background: var(--sc-coal);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.sc-monitor__stage {
+    background: #000000;
+    min-height: 20rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.sc-monitor-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    color: var(--sc-fog);
+    font-size: 0.85rem;
+}
+
+.sc-monitor-empty p {
+    margin: 0;
+    color: var(--sc-fog);
+}
+
+.sc-monitor__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.85rem;
+    color: var(--sc-fog);
+    font-size: 0.75rem;
+    font-family: ui-monospace, Menlo, Monaco, monospace;
+    border-top: 1px solid var(--sc-line);
+    background: var(--sc-coal);
+}
+
+/* Generation Queue Box */
+.sc-queue-card {
+    background: var(--sc-coal);
+    border: 1px solid var(--sc-line);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sc-queue-row-top {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 140px;
+}
+
+.sc-queue-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--sc-fog);
+    text-transform: uppercase;
+}
+
+.sc-queue-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--sc-signal);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+}
+
+.sc-queue-stepper-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.sc-queue-step {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--sc-fog);
+}
+
+.sc-queue-step.done {
+    color: var(--sc-snow);
+}
+
+.sc-queue-step.active {
+    color: var(--sc-signal);
+}
+
+.sc-queue-line {
+    width: 2.2rem;
+    height: 2px;
+    background: var(--sc-line);
+}
+
+.sc-queue-line.done {
+    background: var(--sc-signal);
+}
+
+.sc-queue-row-end {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.sc-queue-pct {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--sc-signal);
+}
+
+.sc-queue-cancel {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    opacity: 0.75;
+    transition: opacity 0.15s ease;
+}
+
+.sc-queue-cancel:hover {
+    opacity: 1;
+}
+
+/* Floating / Header Export Button */
+div[class*="st-key-generate_video_button"] {
+    position: fixed !important;
+    top: 0.5rem;
+    right: 1.25rem;
+    z-index: 70;
+    width: auto !important;
+}
+
+div[class*="st-key-generate_video_button"] button {
+    background: var(--sc-signal) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 5px !important;
+    min-width: 5.5rem;
+    height: 2rem !important;
+    font-weight: 650 !important;
+    font-size: 0.85rem !important;
+}
+
+/* ==========================================================================
+   7. Home View & Project Cards
+   ========================================================================== */
+
+[data-testid="stApp"]:has([data-view="home"]) .st-key-editor_workspace {
+    display: none !important;
+}
+
+[data-testid="stApp"]:has([data-view="editor"]) .st-key-home_workspace {
+    display: none !important;
+}
+
+.sc-project-card {
+    padding: 0.9rem;
+    border: 1px solid var(--sc-line);
+    border-radius: 10px;
+    background: var(--sc-coal);
+    box-shadow: var(--sc-card-shadow);
+    transition: transform 0.18s ease, border-color 0.18s ease;
+    margin-bottom: 0.5rem;
+}
+
+.sc-project-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--sc-signal);
+}
+
+.sc-project-card__thumb {
+    height: 6rem;
+    border-radius: 6px;
+    background: var(--sc-ash);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.65rem;
+}
+
+.sc-project-card h3 {
+    margin: 0 0 0.25rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 650 !important;
+    color: var(--sc-snow) !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sc-project-card p {
+    margin: 0 0 0.4rem !important;
+    font-size: 0.75rem !important;
+    color: var(--sc-fog) !important;
+}
+
+div[class*="st-key-open_project_"] button,
+div[class*="st-key-home_restore_"] button,
+div[class*="st-key-home_delete_"] button {
+    height: 1.85rem !important;
+    min-height: 1.85rem !important;
+    padding: 0 0.4rem !important;
+    font-size: 0.75rem !important;
+    background: var(--sc-ash) !important;
+    border: 1px solid var(--sc-line) !important;
+    color: var(--sc-snow) !important;
+    border-radius: 4px !important;
+}
+
+/* ==========================================================================
+   8. Settings Modal Popup (VS Code Vertical Sidebar Style)
+   ========================================================================== */
+
+div[data-testid="stDialog"] {
+    background: var(--sc-dialog-backdrop) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+div[data-testid="stDialog"] > div[role="dialog"] {
+    background: var(--sc-void) !important;
+    border: 1px solid var(--sc-line) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45) !important;
+    padding: 1.25rem 1.5rem !important;
+    max-width: 740px !important;
+    color: var(--sc-snow) !important;
+}
+
+.sc-settings-nav-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.sc-settings-nav-sidebar button {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    font-size: 0.82rem !important;
+    font-weight: 550 !important;
+}
+
+/* ==========================================================================
+   9. Responsive Breakpoints (Desktop / Tablet / Mobile)
+   ========================================================================== */
+
+@media (min-width: 701px) and (max-width: 1080px) {
+    .st-key-home_workspace [data-testid="stHorizontalBlock"] {
         flex-wrap: wrap !important;
-        gap: 1rem !important;
+        gap: 0.75rem !important;
     }
 
-    div[class*="st-key-main_settings_grid"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"] {
+    .st-key-home_workspace [data-testid="stColumn"] {
         flex: 1 1 calc(50% - 0.5rem) !important;
-        width: calc(50% - 0.5rem) !important;
         min-width: calc(50% - 0.5rem) !important;
     }
 }
 
-/* 移动端隐藏桌面表头，并将任务行重排为“主题 + 元信息 + 操作”紧凑结构。 */
 @media (max-width: 700px) {
-    div[class*="st-key-task_table_header_"] {
-        display: none !important;
+    .st-key-home_workspace [data-testid="stHorizontalBlock"],
+    .st-key-editor_workspace [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
     }
 
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"] {
-        display: grid !important;
-        grid-template-columns: auto minmax(0, 1fr) auto auto;
-        gap: 0.2rem 0.5rem !important;
-        align-items: center !important;
+    .st-key-home_workspace [data-testid="stColumn"],
+    .st-key-editor_workspace [data-testid="stColumn"] {
+        width: 100% !important;
+        min-width: 100% !important;
     }
 
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"] {
-        width: auto !important;
-        min-width: 0 !important;
+    .st-key-top_bar [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
     }
 
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(1) {
-        grid-column: 1;
-        grid-row: 2;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(2) {
-        grid-column: 2;
-        grid-row: 2;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(3) {
-        grid-column: 1 / 4;
-        grid-row: 1;
-        font-weight: 600;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(4) {
-        grid-column: 3;
-        grid-row: 2;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(5) {
-        grid-column: 4;
-        grid-row: 1 / 3;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(5)
-        div[data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: row !important;
-        gap: 0.15rem !important;
-    }
-
-    div[class*="st-key-task_row_"]
-        > div[data-testid="stLayoutWrapper"]
-        > div[data-testid="stHorizontalBlock"]
-        > div[data-testid="stColumn"]:nth-child(5)
-        div[data-testid="stColumn"] {
-        flex: 1 1 0 !important;
-        width: auto !important;
-        min-width: 1.75rem !important;
+    div[data-testid="stDialog"] > div[role="dialog"] {
+        width: 96vw !important;
+        padding: 0.9rem !important;
     }
 }

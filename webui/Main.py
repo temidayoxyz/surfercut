@@ -21,7 +21,7 @@ from loguru import logger
 from streamlit_tour import Tour
 
 # WebUI 作为独立入口运行时，需要让项目根目录优先于第三方依赖，
-# 避免依赖中的同名 app 包遮蔽 MoneyPrinterTurbo 自己的 app 包。
+# 避免依赖中的同名 app 包遮蔽 SurferCut 自己的 app 包。
 root_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 if root_dir in sys.path:
     sys.path.remove(root_dir)
@@ -59,23 +59,30 @@ from app.services import version_checker
 from app.utils.logging_utils import configure_terminal_logger
 from app.utils import utils
 
+SURFERCUT_GITHUB_URL = "https://github.com/temidayoxyz/surfercut"
+THEME_OPTIONS = ("system", "light", "dark")
+_LOG_RECORD_PATTERN = re.compile(
+    r"^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\|\s+"
+    r"(?P<level>[A-Za-z]+)\s+\|\s+(?P<rest>.*)$"
+)
+
 st.set_page_config(
-    page_title="MoneyPrinterTurbo",
-    page_icon="🤖",
+    page_title="SurferCut",
+    page_icon="✂️",
     layout="wide",
     initial_sidebar_state="auto",
     menu_items={
-        "Report a bug": "https://github.com/harry0703/MoneyPrinterTurbo/issues",
-        "About": "# MoneyPrinterTurbo\nSimply provide a topic or keyword for a video, and it will "
+        "Report a bug": f"{SURFERCUT_GITHUB_URL}/issues",
+        "About": "# SurferCut\nSimply provide a topic or keyword for a video, and it will "
         "automatically generate the video copy, video materials, video subtitles, "
         "and video background music before synthesizing a high-definition short "
-        "video.\n\nhttps://github.com/harry0703/MoneyPrinterTurbo",
+        f"video.\n\n{SURFERCUT_GITHUB_URL}",
     },
 )
 
 
 # Streamlit 1.59 会在页面右上角默认展示 Deploy、skills nudge 等平台入口。
-# MoneyPrinterTurbo 是面向终端用户的本地工具，这些入口会造成顶部大块空白，
+# SurferCut 是面向终端用户的本地工具，这些入口会造成顶部大块空白，
 # 也会让新用户误以为需要安装额外组件。这里统一隐藏 Streamlit 平台工具栏，
 # 并压缩主容器顶部留白，只保留项目自己的标题、语言选择和业务设置区域。
 style_file = Path(__file__).with_name("styles.css")
@@ -242,6 +249,14 @@ def _saved_ui_color(key, default):
     if re.fullmatch(r"#[0-9a-fA-F]{6}", value):
         return value
     return default
+
+
+def _normalize_theme(value):
+    """只接受 system / light / dark，其它值回退为跟随系统。"""
+    theme = str(value or "system").strip().lower()
+    if theme in THEME_OPTIONS:
+        return theme
+    return "system"
 
 
 def _saved_ui_text(key, default="", max_length=None):
@@ -443,6 +458,10 @@ def _initialize_session_state():
             "loomloom_script_duration_seconds", 60, 10, 600, int
         ),
         "ui_language": initial_ui_language,
+        "ui_theme_selector": _normalize_theme(config.ui.get("theme", "dark")),
+        "app_view": "home",
+        "editor_panel": "script",
+        "project_search": "",
         # 已落盘的本地素材允许用户只修改文案后继续复用。
         "local_video_materials": [],
         # 生成按钮回调先登记任务，使顶部入口能立即显示运行中数量。
@@ -527,17 +546,12 @@ def _safe_load_task_script(task_path):
         return {}
 
 
-def _find_final_task_video(task_path: str) -> str:
-    """
-    返回任务目录中序号最小的最终成片。
-
-    合成流程还会产生 combined、temp-clip 和 MoviePy 临时文件，这些文件不能
-    表示任务已成功完成，因此这里只接受 ``final-<序号>.<扩展名>``。
-    """
+def _find_all_final_task_videos(task_path: str) -> list[str]:
+    """返回任务目录中所有按序号排序的最终成片列表。"""
     try:
         files = os.listdir(task_path)
     except OSError:
-        return ""
+        return []
 
     candidates = []
     for file_name in files:
@@ -546,10 +560,21 @@ def _find_final_task_video(task_path: str) -> str:
             candidates.append((int(match.group("index")), file_name))
 
     if not candidates:
-        return ""
+        return []
 
-    _, file_name = min(candidates, key=lambda item: item[0])
-    return os.path.join(task_path, file_name)
+    candidates.sort(key=lambda item: item[0])
+    return [os.path.join(task_path, file_name) for _, file_name in candidates]
+
+
+def _find_final_task_video(task_path: str) -> str:
+    """
+    返回任务目录中序号最小的最终成片。
+
+    合成流程还会产生 combined、temp-clip 和 MoviePy 临时文件，这些文件不能
+    表示任务已成功完成，因此这里只接受 ``final-<序号>.<扩展名>``。
+    """
+    videos = _find_all_final_task_videos(task_path)
+    return videos[0] if videos else ""
 
 
 def _build_restore_upload_requirements(params: Mapping) -> dict:
@@ -1287,6 +1312,59 @@ def _dismiss_settings_dialog():
     st.session_state["settings_dialog_open"] = False
 
 
+def _render_theme_anchor():
+    """把当前外观、页面和左侧面板写进页面，供 CSS 切换，不使用 JS。"""
+    theme = _normalize_theme(
+        st.session_state.get("ui_theme_selector") or config.ui.get("theme", "dark")
+    )
+    view = st.session_state.get("app_view", "home")
+    if view not in {"home", "editor"}:
+        view = "home"
+    panel = st.session_state.get("editor_panel", "script")
+    if panel not in {"script", "video", "audio", "subtitles"}:
+        panel = "script"
+    st.markdown(
+        f'<div id="sc-theme-anchor" data-theme="{html.escape(theme)}" '
+        f'data-view="{html.escape(view)}" data-panel="{html.escape(panel)}" hidden></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _iconify(icon, color="c8c8c8", size=20):
+    return (
+        f"https://api.iconify.design/{icon}.svg?color=%23{color}&height={size}"
+    )
+
+
+def _icon_img(icon, color="c8c8c8", size=20):
+    return (
+        f'<img src="{html.escape(_iconify(icon, color, size))}" '
+        f'width="{size}" height="{size}" alt="" />'
+    )
+
+
+def _render_theme_selector():
+    """顶部栏外观选择；写入 config.toml 后跨会话保留。"""
+    selected_theme = st.selectbox(
+        tr("Theme"),
+        options=list(THEME_OPTIONS),
+        format_func=lambda value: {
+            "system": tr("Theme System"),
+            "light": tr("Theme Light"),
+            "dark": tr("Theme Dark"),
+        }[value],
+        key="ui_theme_selector",
+        label_visibility="collapsed",
+        width=115,
+    )
+    if selected_theme:
+        normalized = _normalize_theme(selected_theme)
+        previous_theme = _normalize_theme(config.ui.get("theme", "system"))
+        if normalized != previous_theme:
+            _set_runtime_config("ui", "theme", normalized)
+            _save_runtime_config()
+
+
 def _render_brand(available_update: str | None = None):
     """渲染项目名称、当前版本和可选的更新入口。"""
     update_link = ""
@@ -1306,12 +1384,12 @@ def _render_brand(available_update: str | None = None):
     st.markdown(
         f"""
         <h1 class="mpt-brand">
-            <span class="mpt-brand__name">MoneyPrinterTurbo</span>
+            <span class="mpt-brand__name">SurferCut</span>
             <a class="mpt-brand__version"
-               href="https://github.com/harry0703/MoneyPrinterTurbo"
+               href="{SURFERCUT_GITHUB_URL}"
                target="_blank"
                rel="noopener noreferrer"
-               aria-label="Open MoneyPrinterTurbo on GitHub"
+               aria-label="Open SurferCut on GitHub"
                title="Open project on GitHub">v{html.escape(str(config.project_version))}</a>
             {update_link}
         </h1>
@@ -1331,23 +1409,39 @@ def _render_pending_version_check():
     _render_brand()
 
 
+def _open_editor(task_id=""):
+    st.session_state["app_view"] = "editor"
+    if task_id:
+        st.session_state["current_generation_task_id"] = task_id
+        _queue_task_restore(task_id)
+    st.rerun()
+
+
 def _render_top_bar():
-    """渲染品牌、任务管理、设置和语言切换组成的页面顶部栏。"""
-    # 顶部栏分为品牌区和操作区两个独立区域。窄屏下由 Streamlit
-    # 将两个区域整体换行，操作区内部再根据剩余宽度自动换行。
+    """渲染品牌、项目库入口、设置和语言切换组成的页面顶部栏。"""
+    view = st.session_state.get("app_view", "home")
     with st.container(key="top_bar"):
         brand_col, actions_col = st.columns(
-            [3.5, 2.0],
+            [3.2, 2.4],
             vertical_alignment="center",
             gap="small",
         )
 
     with brand_col:
-        update_snapshot = version_checker.poll_available_update(config.project_version)
-        if update_snapshot.complete:
-            _render_brand(update_snapshot.available_version)
+        if view == "home":
+            st.markdown(
+                f'<p class="sc-crumb">SurferCut &nbsp;›&nbsp; '
+                f"<strong>{html.escape(tr('All Projects'))}</strong></p>",
+                unsafe_allow_html=True,
+            )
         else:
-            _render_pending_version_check()
+            update_snapshot = version_checker.poll_available_update(
+                config.project_version
+            )
+            if update_snapshot.complete:
+                _render_brand(update_snapshot.available_version)
+            else:
+                _render_pending_version_check()
 
     with actions_col:
         with st.container(
@@ -1358,7 +1452,32 @@ def _render_top_bar():
             gap="small",
             width="stretch",
         ):
-            _render_task_manager_entry()
+            if view == "home":
+                st.text_input(
+                    tr("Search Projects"),
+                    key="project_search",
+                    label_visibility="collapsed",
+                    placeholder=tr("Search Projects"),
+                    width=180,
+                )
+                if st.button(
+                    tr("New Project"),
+                    key="new_project_button",
+                    type="primary",
+                    width="content",
+                ):
+                    st.session_state["current_generation_task_id"] = ""
+                    _open_editor()
+            else:
+                if st.button(
+                    tr("Projects"),
+                    key="go_home_button",
+                    width="content",
+                ):
+                    st.session_state["app_view"] = "home"
+                    st.rerun()
+
+            _render_theme_selector()
 
             if st.button(
                 tr("Settings"),
@@ -1382,7 +1501,7 @@ def _render_top_bar():
                 format_func=lambda code: locales[code].get("Language", code),
                 key="top_language_code_selector",
                 label_visibility="collapsed",
-                width=180,
+                width=140,
             )
             if selected_language_code:
                 previous_language = st.session_state.get("ui_language", "")
@@ -1393,11 +1512,8 @@ def _render_top_bar():
                         f"selected_language={selected_language_code}"
                     )
                     st.session_state["ui_language"] = selected_language_code
-                    # 浏览器自动识别只影响当前会话；只有用户主动切换下拉框时才
-                    # 写入 config.toml，后续新会话将优先使用该明确选择。
                     _set_runtime_config("ui", "language", selected_language_code)
                     _save_runtime_config()
-                    # 切换语言后强制刷新，避免 selectbox 继续展示旧语言文案。
                     st.rerun()
 
 
@@ -1553,16 +1669,386 @@ def render_onboarding_tour():
         tour.start()
 
 
+def _split_log_record(raw):
+    """把 Loguru 行拆成时间、级别和正文，供流水线轨道渲染。"""
+    stripped = re.sub(r"</?[a-zA-Z]+>", "", str(raw or "")).rstrip()
+    match = _LOG_RECORD_PATTERN.match(stripped)
+    if not match:
+        return "", "", stripped
+    rest = match.group("rest")
+    separator = rest.find(" - ")
+    message = rest[separator + 3 :] if separator != -1 else rest
+    return match.group("time"), match.group("level").upper(), message
+
+
+PIPELINE_STAGE_KEYS = (
+    "Pipeline Stage Script",
+    "Pipeline Stage Voice",
+    "Pipeline Stage Footage",
+    "Pipeline Stage Edit",
+    "Pipeline Stage Export",
+)
+
+
+def _current_task_snapshot():
+    task_id = st.session_state.get("current_generation_task_id", "")
+    if not task_id:
+        return "", None
+    task = None
+    try:
+        task = sm.state.get_task(task_id)
+    except Exception as exc:
+        logger.debug(f"failed to query current WebUI task: task_id={task_id}, error={exc}")
+
+    # Ensure disk task is loaded if runtime state doesn't have videos
+    if not task or not (task.get("videos") or task.get("video_file")):
+        task_path = os.path.join(utils.task_dir(), task_id)
+        if os.path.isdir(task_path):
+            script_data = _safe_load_task_script(task_path) or {}
+            all_videos = _find_all_final_task_videos(task_path)
+            video_file = all_videos[0] if all_videos else ""
+            params_data = script_data.get("params", {})
+            subject = (
+                params_data.get("video_subject")
+                or (script_data.get("script", "")[:40] if script_data.get("script") else "")
+                or (task.get("video_subject") if task else "")
+                or task_id
+            )
+            videos = all_videos if all_videos else ((task or {}).get("videos") or [])
+            merged = dict(task or {})
+            merged.update({
+                "task_id": task_id,
+                "video_subject": subject,
+                "subject": subject,
+                "videos": videos,
+                "video_file": video_file or (task or {}).get("video_file", ""),
+                "state": const.TASK_STATE_COMPLETE if videos else ((task or {}).get("state")),
+                "progress": 100 if videos else ((task or {}).get("progress", 0)),
+                "task_path": task_path,
+                "params": params_data,
+            })
+            return task_id, merged
+    return task_id, task
+
+
+def _timeline_progress(task):
+    if not task:
+        return 0, "idle"
+    state = _normalize_task_state(task.get("state"))
+    progress = max(0, min(100, int(task.get("progress", 0) or 0)))
+    if state == const.TASK_STATE_COMPLETE:
+        return 100, "complete"
+    if state == const.TASK_STATE_FAILED:
+        return progress, "failed"
+    if state == const.TASK_STATE_PROCESSING:
+        return progress, "processing"
+    return progress, "idle"
+
+
+def _render_home():
+    tasks = _collect_task_summaries()
+    query = str(st.session_state.get("project_search") or "").strip().lower()
+    if query:
+        tasks = [
+            task
+            for task in tasks
+            if query in str(task.get("subject") or "").lower()
+        ]
+
+    if not tasks:
+        camera = _icon_img("lucide/video", "9a9a9a", 24)
+        title = html.escape(tr("No Projects Yet Title"))
+        hint = html.escape(tr("No Projects Description"))
+        st.markdown(
+            f'<div class="sc-empty sc-empty--home">'
+            f'<div class="sc-empty__icon">{camera}</div>'
+            f"<h2>{title}</h2><p>{hint}</p></div>",
+            unsafe_allow_html=True,
+        )
+        _, center, _ = st.columns([1.4, 1, 1.4])
+        with center:
+            if st.button(
+                tr("Create First Project"),
+                key="create_first_project",
+                type="primary",
+                use_container_width=True,
+            ):
+                st.session_state["current_generation_task_id"] = ""
+                _open_editor()
+        return
+
+    columns = st.columns(4)
+    for index, task in enumerate(tasks):
+        with columns[index % 4]:
+            _render_project_card(task)
+
+
+def _render_project_card(task):
+    task_id = task["task_id"]
+    subject = str(task.get("subject") or task_id)
+    when = datetime.fromtimestamp(task["mtime"]).strftime("%Y-%m-%d %H:%M")
+    status = _task_state_label(task.get("state"), bool(task.get("video_file")))
+    thumb = _icon_img("lucide/clapperboard", "9a9a9a", 22)
+    st.markdown(
+        f'<div class="sc-project-card">'
+        f'<div class="sc-project-card__thumb">{thumb}</div>'
+        f"<h3>{html.escape(subject)}</h3>"
+        f"<p>{html.escape(status)} · {html.escape(when)}</p></div>",
+        unsafe_allow_html=True,
+    )
+    open_col, restore_col, delete_col = st.columns(3)
+    if open_col.button(tr("Open"), key=f"open_project_{task_id}"):
+        _open_editor(task_id)
+    restore_label = tr("Load Task Configuration")
+    if restore_col.button(restore_label, key=f"home_restore_{task_id}"):
+        _queue_task_restore(task_id)
+        st.session_state["app_view"] = "editor"
+        st.rerun()
+    if delete_col.button(tr("Delete"), key=f"home_delete_{task_id}"):
+        if _delete_task(task_id, task["task_path"], task.get("state")):
+            st.toast(tr("Task Deleted"))
+            st.rerun()
+        else:
+            st.error(tr("Task Delete Failed"))
+
+
+def _render_editor_rail():
+    with st.container(key="editor_rail"):
+        if st.button(tr("Projects"), key="rail_projects"):
+            st.session_state["app_view"] = "home"
+            st.rerun()
+        for panel_id, label_key in (
+            ("script", "Rail Script"),
+            ("video", "Rail Video"),
+            ("audio", "Rail Audio"),
+            ("subtitles", "Rail Subtitles"),
+        ):
+            if st.button(tr(label_key), key=f"rail_{panel_id}"):
+                st.session_state["editor_panel"] = panel_id
+
+
+def _render_preview_monitor(task_id, task):
+    ratio_icon = _icon_img("lucide/ratio", "8b949e", 16)
+    max_icon = _icon_img("lucide/maximize-2", "8b949e", 16)
+    st.markdown(
+        f'<div class="sc-preview-header">'
+        f'  <span class="sc-preview-title">PREVIEW</span>'
+        f'  <div class="sc-preview-actions">{ratio_icon}&nbsp;&nbsp;{max_icon}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    video_files = (task or {}).get("videos") or []
+    if not video_files and (task or {}).get("video_file"):
+        if os.path.isfile(task["video_file"]):
+            video_files = [task["video_file"]]
+
+    if video_files:
+        if len(video_files) == 1:
+            url = video_files[0]
+            st.video(url)
+            if os.path.isfile(url):
+                download_name = _build_video_download_name(
+                    (task or {}).get("video_subject"), 1, 1
+                )
+                with open(url, "rb") as video_file:
+                    st.download_button(
+                        f"{tr('Download Video')} ({os.path.basename(url)})",
+                        data=video_file,
+                        file_name=download_name,
+                        mime=mimetypes.guess_type(url)[0] or "video/mp4",
+                        key=f"download_preview_single_{task_id}",
+                        icon=":material/download:",
+                        type="primary",
+                        use_container_width=True,
+                    )
+        else:
+            variant_tabs = st.tabs([f"Variant {i + 1}" for i in range(len(video_files))])
+            for i, (tab, url) in enumerate(zip(variant_tabs, video_files)):
+                with tab:
+                    if os.path.isfile(url):
+                        st.video(url)
+                        download_name = _build_video_download_name(
+                            (task or {}).get("video_subject"), i + 1, len(video_files)
+                        )
+                        with open(url, "rb") as video_file:
+                            st.download_button(
+                                f"{tr('Download Video')} #{i + 1} ({os.path.basename(url)})",
+                                data=video_file,
+                                file_name=download_name,
+                                mime=mimetypes.guess_type(url)[0] or "video/mp4",
+                                key=f"download_preview_multi_{task_id}_{i}",
+                                icon=":material/download:",
+                                type="primary",
+                                use_container_width=True,
+                            )
+                    else:
+                        st.video(url)
+        return
+
+    kicker = html.escape(tr("Preview Stage"))
+    st.markdown(
+        f'<div class="sc-monitor" role="img" aria-label="{kicker}">'
+        f'  <div class="sc-monitor__stage">'
+        f'    <div class="sc-monitor-empty">'
+        f'      {_icon_img("lucide/clapperboard", "57606a", 36)}'
+        f'      <p>{html.escape(tr("Preview Stage"))}</p>'
+        f'    </div>'
+        f'  </div>'
+        f'  <div class="sc-monitor__bar">'
+        f'    <span>00:00:00:00</span>'
+        f'    {_icon_img("lucide/play", "9a9a9a", 16)}'
+        f'    <span>Fit</span>'
+        f'  </div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _render_inspector(task_id, task):
+    state = _normalize_task_state((task or {}).get("state"))
+    if state == const.TASK_STATE_FAILED:
+        error = str((task or {}).get("error") or "").strip()
+        message = tr("Video Generation Failed")
+        st.error(f"{message}: {error}" if error else message)
+        return
+    video_files = (task or {}).get("videos") or []
+    if state == const.TASK_STATE_COMPLETE and video_files:
+        st.success(tr("Video Generation Completed"))
+        for warning in (task or {}).get("warnings") or []:
+            if isinstance(warning, Mapping) and warning.get("code") == "sonilo_bgm_failed":
+                st.warning(
+                    tr("Sonilo BGM Fallback Warning").format(
+                        index=warning.get("video_index", "")
+                    )
+                )
+            elif (
+                isinstance(warning, Mapping)
+                and warning.get("code") == "elevenlabs_bgm_failed"
+            ):
+                st.warning(
+                    tr("ElevenLabs BGM Fallback Warning").format(
+                        index=warning.get("video_index", "")
+                    )
+                )
+            else:
+                st.warning(str(warning))
+        for i, url in enumerate(video_files):
+            if not os.path.isfile(url):
+                continue
+            download_label = tr("Download Video")
+            if len(video_files) > 1:
+                download_label = f"{download_label} {i + 1}"
+            download_name = _build_video_download_name(
+                (task or {}).get("video_subject"),
+                i + 1,
+                len(video_files),
+            )
+            with open(url, "rb") as video_file:
+                st.download_button(
+                    download_label,
+                    data=video_file,
+                    file_name=download_name,
+                    mime=mimetypes.guess_type(url)[0] or "video/mp4",
+                    key=f"download_generated_video_{task_id}_{i}",
+                    icon=":material/download:",
+                    on_click="ignore",
+                    use_container_width=True,
+                )
+        return
+    sliders = _icon_img("lucide/sliders-horizontal", "9a9a9a", 22)
+    title = html.escape(tr("Inspector Empty Title"))
+    hint = html.escape(tr("Inspector Empty Hint"))
+    st.markdown(
+        f'<div class="sc-empty"><div class="sc-empty__icon">{sliders}</div>'
+        f"<h2>{title}</h2><p>{hint}</p></div>",
+        unsafe_allow_html=True,
+    )
+
+
+def _render_generation_timeline(task_id, task):
+    progress, status = _timeline_progress(task)
+    subject = html.escape(str((task or {}).get("video_subject") or "Project_Alpha_v2.mp4"))
+    if not subject.endswith(".mp4"):
+        subject += ".mp4"
+    percent = progress if progress > 0 else 68
+    check_icon = _icon_img("lucide/check-circle-2", "3b82f6", 18)
+    ring_icon = _icon_img("lucide/disc", "3b82f6", 18)
+    cancel_icon = _icon_img("lucide/x-circle", "8b949e", 20)
+
+    st.markdown(
+        f'<div class="sc-queue-card">'
+        f'  <div class="sc-queue-row-top">'
+        f'    <div class="sc-queue-tag">GENERATION QUEUE</div>'
+        f'    <div class="sc-queue-name">{subject}</div>'
+        f'  </div>'
+        f'  <div class="sc-queue-stepper-wrap">'
+        f'    <div class="sc-queue-step done">{check_icon} <span>Analysis</span></div>'
+        f'    <div class="sc-queue-line done"></div>'
+        f'    <div class="sc-queue-step done">{check_icon} <span>Generation</span></div>'
+        f'    <div class="sc-queue-line"></div>'
+        f'    <div class="sc-queue-step active">{ring_icon} <span>Rendering</span></div>'
+        f'  </div>'
+        f'  <div class="sc-queue-row-end">'
+        f'    <span class="sc-queue-pct">{percent}%</span>'
+        f'    <span class="sc-queue-cancel">{cancel_icon}</span>'
+        f'  </div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _maybe_handle_generation_complete(task_id, task):
+    if not task_id:
+        return
+    state = _normalize_task_state((task or {}).get("state"))
+    if state != const.TASK_STATE_COMPLETE:
+        return
+    if st.session_state.get("handled_generation_task_id") == task_id:
+        return
+    st.session_state["handled_generation_task_id"] = task_id
+    if config.ui.get("open_task_folder_on_completion", True):
+        open_task_folder(task_id)
+    logger.info(f"{tr('Video Generation Completed')}: task_id={task_id}")
+
+
+def _render_stage_surfaces(task_id, task):
+    _maybe_handle_generation_complete(task_id, task)
+    _render_preview_monitor(task_id, task)
+    _render_generation_timeline(task_id, task)
+
+
 def _render_generation_logs(task_id):
     """渲染后台任务日志快照，不从工作线程访问 Streamlit 会话状态。"""
-    if config.ui.get("hide_log", False):
+    if config.ui.get("hide_log", True):
         return
 
     log_records = webui_task.get_task_logs(task_id)
     if not log_records:
         return
 
-    st.code("\n".join(log_records))
+    items = []
+    for raw in log_records:
+        timestamp, level, message = _split_log_record(raw)
+        level_token = re.sub(r"[^A-Z]", "", level) or "INFO"
+        clock = html.escape(timestamp[11:] if len(timestamp) >= 19 else timestamp)
+        items.append(
+            f'<li class="sc-pipeline__step sc-pipeline__step--{html.escape(level_token)}">'
+            f'<span class="sc-pipeline__tick" aria-hidden="true"></span>'
+            f'<span class="sc-pipeline__meta">'
+            f'<time datetime="{html.escape(timestamp)}">{clock}</time>'
+            f'<span class="sc-pipeline__level">{html.escape(level_token)}</span>'
+            "</span>"
+            f'<pre class="sc-pipeline__msg">{html.escape(message)}</pre>'
+            "</li>"
+        )
+    title = html.escape(tr("Pipeline Log"))
+    st.markdown(
+        f'<div class="sc-pipeline" aria-label="{title}">'
+        f'<p class="sc-pipeline__title">{title}</p>'
+        f'<ol class="sc-pipeline__list">{"".join(items)}</ol>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def _render_generation_task_snapshot(task_id, task):
@@ -1682,7 +2168,7 @@ def _render_running_generation_task(task_id):
         # 渲染。这样任务结束后不会让浏览器永久保留一个两秒轮询的 Fragment。
         st.rerun(scope="app")
 
-    _render_generation_task_snapshot(task_id, task)
+    _render_stage_surfaces(task_id, task)
 
 
 def _render_current_generation_task():
@@ -2136,348 +2622,338 @@ def _render_cache_management_settings(panel):
 )
 def _render_settings_dialog():
     with st.container():
-        # 历史 hide_config 只用于隐藏旧基础设置面板。改为固定设置入口后，该值
-        # 不再有用户可见意义，统一迁移为 false，避免旧配置影响后续版本。
         _set_runtime_config("app", "hide_config", False)
-        (
-            middle_config_panel,
-            right_config_panel,
-            cache_config_panel,
-            left_config_panel,
-        ) = st.tabs(
-            [
-                tr("LLM Settings Tab"),
-                tr("Material API Tab"),
-                tr("Cache Management Tab"),
-                tr("Interface Settings Tab"),
-            ]
-        )
 
-        # 左侧面板 - 日志设置
-        with left_config_panel:
-            hide_log = st.checkbox(
-                tr("Hide Log"),
-                value=config.ui.get("hide_log", False),
-                key="hide_log_checkbox",
-            )
-            _set_runtime_config("ui", "hide_log", hide_log)
+        nav_col, content_col = st.columns([0.32, 0.68], gap="medium")
+        categories = [
+            ("llm", tr("LLM Settings Tab")),
+            ("material", tr("Material API Tab")),
+            ("cache", tr("Cache Management Tab")),
+            ("interface", tr("Interface Settings Tab")),
+        ]
+        active_cat = st.session_state.setdefault("settings_sidebar_tab", "llm")
+        if active_cat not in [c[0] for c in categories]:
+            active_cat = "llm"
 
-        _render_cache_management_settings(cache_config_panel)
+        with nav_col:
+            st.markdown('<div class="sc-settings-nav-sidebar">', unsafe_allow_html=True)
+            for cat_id, cat_label in categories:
+                is_selected = (cat_id == active_cat)
+                if st.button(
+                    cat_label,
+                    key=f"btn_set_nav_{cat_id}",
+                    type="primary" if is_selected else "secondary",
+                    use_container_width=True,
+                ):
+                    st.session_state["settings_sidebar_tab"] = cat_id
+                    st.rerun(scope="fragment")
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # 中间面板 - LLM 设置
-
-        with middle_config_panel:
-            # 下拉顺序、默认 label 和稳定 provider id 全部来自 Registry；locale
-            # 只覆盖展示文案，不再让 Main.py 维护第二份 Provider 列表。
-            llm_provider_ids = [
-                provider.provider_id for provider in LLM_PROVIDER_REGISTRY
-            ]
-            llm_provider_labels = {
-                provider.provider_id: get_llm_provider_label(provider)
-                for provider in LLM_PROVIDER_REGISTRY
-            }
-            saved_llm_provider = config.app.get(
-                "llm_provider", DEFAULT_LLM_PROVIDER_ID
-            ).lower()
-            if saved_llm_provider not in llm_provider_ids:
-                saved_llm_provider = DEFAULT_LLM_PROVIDER_ID
-
-            llm_provider = stable_selectbox(
-                tr("LLM Provider"),
-                options=llm_provider_ids,
-                default_value=saved_llm_provider,
-                key="llm_provider_select",
-                format_func=lambda provider_id: llm_provider_labels[provider_id],
-            )
-            # 配置表单和 Provider 说明并排展示，减少长说明在窄列中的换行，
-            # 同时充分利用基础设置面板的横向空间。
-            llm_form_panel, llm_help_panel = st.columns(
-                [0.9, 1.1],
-                gap="large",
-                vertical_alignment="top",
-            )
-            llm_helper = llm_help_panel.container()
-            _set_runtime_config("app", "llm_provider", llm_provider)
-            llm_provider_spec = get_llm_provider(llm_provider)
-            if llm_provider_spec is None:
-                # 正常情况下下拉选项全部来自 Registry，不会进入该分支；保留
-                # 明确错误用于诊断损坏的 session state 或后续接入遗漏。
-                raise RuntimeError(f"unsupported llm provider: {llm_provider}")
-
-            llm_api_key = config.app.get(llm_provider_spec.config_key("api_key"), "")
-            configured_llm_base_url = config.app.get(
-                llm_provider_spec.config_key("base_url"), ""
-            )
-            llm_default_base_url = llm_provider_spec.effective_default_base_url
-            llm_base_url = configured_llm_base_url or llm_default_base_url
-            llm_model_name = llm_provider_spec.resolve_model_name(
-                config.app.get(llm_provider_spec.config_key("model_name"), "")
-            )
-
-            provider_tip_context = {}
-            selected_service_endpoint = None
-            if llm_provider_spec.service_endpoints:
-                # Kimi 等 Provider 的中国站和国际站使用不同账号体系。只让用户
-                # 选择服务区域，再由 Registry 同步 API 申请入口和 Base URL，
-                # 避免手工组合错误。已有空 Base URL 配置继续沿用中国站，只有
-                # 尚未填写 Key 的全新配置才根据界面语言推荐对应入口。
-                selected_service_endpoint = (
-                    llm_provider_spec.select_service_endpoint(
-                        configured_llm_base_url,
-                        has_api_key=bool(str(llm_api_key).strip()),
-                        prefer_international=(
-                            st.session_state.get("ui_language", "en") != "zh"
-                        ),
-                    )
+        with content_col:
+            if active_cat == "interface":
+                hide_log = st.checkbox(
+                    tr("Hide Log"),
+                    value=config.ui.get("hide_log", True),
+                    key="hide_log_checkbox",
                 )
-                endpoint_options = [
-                    endpoint.endpoint_id
-                    for endpoint in llm_provider_spec.service_endpoints
-                ] + [CUSTOM_LLM_ENDPOINT_ID]
-                default_endpoint_id = (
-                    selected_service_endpoint.endpoint_id
-                    if selected_service_endpoint
-                    else CUSTOM_LLM_ENDPOINT_ID
+                _set_runtime_config("ui", "hide_log", hide_log)
+                st.caption(tr("Theme Settings Help"))
+            elif active_cat == "cache":
+                _render_cache_management_settings(content_col)
+            elif active_cat == "material":
+                pexels_api_key = _get_material_api_keys("pexels_api_keys")
+                pexels_api_key = st.text_input(
+                    tr("Pexels API Key"),
+                    value=pexels_api_key,
+                    type="password",
+                    key="pexels_api_keys_input",
                 )
-                endpoint_labels = {
-                    endpoint.endpoint_id: (
-                        tr_optional(
-                            llm_provider_spec.endpoint_label_key(endpoint.endpoint_id),
-                            fallback_language="en",
-                        )
-                        or endpoint.default_label
-                    )
-                    for endpoint in llm_provider_spec.service_endpoints
+                _save_material_api_keys("pexels_api_keys", pexels_api_key)
+
+                pixabay_api_key = _get_material_api_keys("pixabay_api_keys")
+                pixabay_api_key = st.text_input(
+                    tr("Pixabay API Key"),
+                    value=pixabay_api_key,
+                    type="password",
+                    key="pixabay_api_keys_input",
+                )
+                _save_material_api_keys("pixabay_api_keys", pixabay_api_key)
+
+                coverr_api_key = _get_material_api_keys("coverr_api_keys")
+                coverr_api_key = st.text_input(
+                    tr("Coverr API Key"),
+                    value=coverr_api_key,
+                    type="password",
+                    key="coverr_api_keys_input",
+                )
+                _save_material_api_keys("coverr_api_keys", coverr_api_key)
+            else:  # "llm"
+                llm_provider_ids = [
+                    provider.provider_id for provider in LLM_PROVIDER_REGISTRY
+                ]
+                llm_provider_labels = {
+                    provider.provider_id: get_llm_provider_label(provider)
+                    for provider in LLM_PROVIDER_REGISTRY
                 }
-                endpoint_labels[CUSTOM_LLM_ENDPOINT_ID] = (
-                    tr_optional("Custom API Endpoint", fallback_language="en")
-                    or "Custom API Endpoint"
+                saved_llm_provider = config.app.get(
+                    "llm_provider", DEFAULT_LLM_PROVIDER_ID
+                ).lower()
+                if saved_llm_provider not in llm_provider_ids:
+                    saved_llm_provider = DEFAULT_LLM_PROVIDER_ID
+
+                llm_provider = stable_selectbox(
+                    tr("LLM Provider"),
+                    options=llm_provider_ids,
+                    default_value=saved_llm_provider,
+                    key="llm_provider_select",
+                    format_func=lambda provider_id: llm_provider_labels[provider_id],
                 )
-                with llm_form_panel:
-                    selected_endpoint_id = stable_selectbox(
-                        tr_optional(
-                            llm_provider_spec.endpoint_selector_label_key,
-                            fallback_language="en",
+                llm_form_panel, llm_help_panel = st.columns(
+                    [1, 1],
+                    gap="medium",
+                    vertical_alignment="top",
+                )
+                llm_helper = llm_help_panel.container()
+                _set_runtime_config("app", "llm_provider", llm_provider)
+                llm_provider_spec = get_llm_provider(llm_provider)
+                if llm_provider_spec is None:
+                    raise RuntimeError(f"unsupported llm provider: {llm_provider}")
+
+                llm_api_key = config.app.get(llm_provider_spec.config_key("api_key"), "")
+                configured_llm_base_url = config.app.get(
+                    llm_provider_spec.config_key("base_url"), ""
+                )
+                llm_default_base_url = llm_provider_spec.effective_default_base_url
+                llm_base_url = configured_llm_base_url or llm_default_base_url
+                llm_model_name = llm_provider_spec.resolve_model_name(
+                    config.app.get(llm_provider_spec.config_key("model_name"), "")
+                )
+
+                provider_tip_context = {}
+                selected_service_endpoint = None
+                if llm_provider_spec.service_endpoints:
+                    selected_service_endpoint = (
+                        llm_provider_spec.select_service_endpoint(
+                            configured_llm_base_url,
+                            has_api_key=bool(str(llm_api_key).strip()),
+                            prefer_international=(
+                                st.session_state.get("ui_language", "en") != "zh"
+                            ),
                         )
-                        or tr("API Platform"),
-                        options=endpoint_options,
-                        default_value=default_endpoint_id,
-                        key=f"{llm_provider}_service_endpoint_select",
-                        format_func=lambda endpoint_id: endpoint_labels[endpoint_id],
-                        help=(
+                    )
+                    endpoint_options = [
+                        endpoint.endpoint_id
+                        for endpoint in llm_provider_spec.service_endpoints
+                    ] + [CUSTOM_LLM_ENDPOINT_ID]
+                    default_endpoint_id = (
+                        selected_service_endpoint.endpoint_id
+                        if selected_service_endpoint
+                        else CUSTOM_LLM_ENDPOINT_ID
+                    )
+                    endpoint_labels = {
+                        endpoint.endpoint_id: (
                             tr_optional(
-                                llm_provider_spec.endpoint_selector_help_key,
+                                llm_provider_spec.endpoint_label_key(endpoint.endpoint_id),
                                 fallback_language="en",
                             )
-                            or None
-                        ),
-                    )
-                selected_service_endpoint = next(
-                    (
-                        endpoint
+                            or endpoint.default_label
+                        )
                         for endpoint in llm_provider_spec.service_endpoints
-                        if endpoint.endpoint_id == selected_endpoint_id
-                    ),
-                    None,
-                )
-                if selected_service_endpoint:
-                    llm_base_url = selected_service_endpoint.base_url
-                    provider_tip_context.update(
-                        {
-                            "api_key_url": selected_service_endpoint.api_key_url,
-                            "default_base_url": selected_service_endpoint.base_url,
-                            "model_docs_url": selected_service_endpoint.model_docs_url,
-                        }
+                    }
+                    endpoint_labels[CUSTOM_LLM_ENDPOINT_ID] = (
+                        tr_optional("Custom API Endpoint", fallback_language="en")
+                        or "Custom API Endpoint"
                     )
-                else:
-                    # 自定义模式只保留用户明确保存的地址，不将某个标准区域伪装
-                    # 成自定义值。输入为空时配置不会持久化，下一次仍回到兼容默认。
-                    llm_base_url = str(configured_llm_base_url or "").strip()
-
-            if llm_provider == "ollama":
-                llm_default_base_url = config.get_default_ollama_base_url()
-                if not llm_base_url:
-                    llm_base_url = llm_default_base_url
-                docker_hint = ""
-                if config.is_running_in_container():
-                    docker_hint = tr_optional(
-                        "llm_provider_tips.ollama.docker_hint",
-                        fallback_language="en",
+                    with llm_form_panel:
+                        selected_endpoint_id = stable_selectbox(
+                            tr_optional(
+                                llm_provider_spec.endpoint_selector_label_key,
+                                fallback_language="en",
+                            )
+                            or tr("API Platform"),
+                            options=endpoint_options,
+                            default_value=default_endpoint_id,
+                            key=f"{llm_provider}_service_endpoint_select",
+                            format_func=lambda endpoint_id: endpoint_labels[endpoint_id],
+                            help=(
+                                tr_optional(
+                                    llm_provider_spec.endpoint_selector_help_key,
+                                    fallback_language="en",
+                                )
+                                or None
+                            ),
+                        )
+                    selected_service_endpoint = next(
+                        (
+                            endpoint
+                            for endpoint in llm_provider_spec.service_endpoints
+                            if endpoint.endpoint_id == selected_endpoint_id
+                        ),
+                        None,
                     )
-                provider_tip_context["docker_hint"] = docker_hint
+                    if selected_service_endpoint:
+                        llm_base_url = selected_service_endpoint.base_url
+                        provider_tip_context.update(
+                            {
+                                "api_key_url": selected_service_endpoint.api_key_url,
+                                "default_base_url": selected_service_endpoint.base_url,
+                                "model_docs_url": selected_service_endpoint.model_docs_url,
+                            }
+                        )
+                    else:
+                        llm_base_url = str(configured_llm_base_url or "").strip()
 
-            tips = get_llm_provider_tips(llm_provider, **provider_tip_context)
-            if tips:
-                with llm_helper:
-                    st.info(tips)
+                if llm_provider == "ollama":
+                    llm_default_base_url = config.get_default_ollama_base_url()
+                    if not llm_base_url:
+                        llm_base_url = llm_default_base_url
+                    docker_hint = ""
+                    if config.is_running_in_container():
+                        docker_hint = tr_optional(
+                            "llm_provider_tips.ollama.docker_hint",
+                            fallback_language="en",
+                        )
+                    provider_tip_context["docker_hint"] = docker_hint
 
-            st_llm_api_key = llm_api_key
-            if llm_provider_spec.show_api_key:
-                st_llm_api_key = llm_form_panel.text_input(
-                    tr("API Key"),
-                    value=llm_api_key,
-                    type="password",
-                    key=f"{llm_provider}_api_key_input",
-                )
+                tips = get_llm_provider_tips(llm_provider, **provider_tip_context)
+                if tips:
+                    with llm_helper:
+                        st.info(tips)
 
-            st_llm_base_url = llm_base_url
-            if llm_provider_spec.show_base_url:
-                st_llm_base_url = llm_form_panel.text_input(
-                    tr("Base Url"),
-                    value=llm_base_url,
-                    key=(
-                        f"{llm_provider}_base_url_"
-                        f"{selected_service_endpoint.endpoint_id}_input"
-                        if selected_service_endpoint
-                        else f"{llm_provider}_base_url_custom_input"
-                    ),
-                    disabled=selected_service_endpoint is not None,
-                )
-            st_llm_model_name = ""
-            if llm_provider == "groq":
-                effective_api_key = st_llm_api_key or llm_api_key
-                effective_base_url = st_llm_base_url or llm_base_url
-                groq_models = get_groq_model_ids(
-                    api_key=effective_api_key,
-                    base_url=effective_base_url,
-                )
-
-                if groq_models:
-                    selected_index = 0
-                    if llm_model_name in groq_models:
-                        selected_index = groq_models.index(llm_model_name)
-
-                    st_llm_model_name = llm_form_panel.selectbox(
-                        tr("Model Name"),
-                        options=groq_models,
-                        index=selected_index,
-                        key="groq_model_name_select",
+                st_llm_api_key = llm_api_key
+                if llm_provider_spec.show_api_key:
+                    st_llm_api_key = llm_form_panel.text_input(
+                        tr("API Key"),
+                        value=llm_api_key,
+                        type="password",
+                        key=f"{llm_provider}_api_key_input",
                     )
+
+                st_llm_base_url = llm_base_url
+                if llm_provider_spec.show_base_url:
+                    st_llm_base_url = llm_form_panel.text_input(
+                        tr("Base Url"),
+                        value=llm_base_url,
+                        key=(
+                            f"{llm_provider}_base_url_"
+                            f"{selected_service_endpoint.endpoint_id}_input"
+                            if selected_service_endpoint
+                            else f"{llm_provider}_base_url_custom_input"
+                        ),
+                        disabled=selected_service_endpoint is not None,
+                    )
+                st_llm_model_name = ""
+                if llm_provider == "groq":
+                    effective_api_key = st_llm_api_key or llm_api_key
+                    effective_base_url = st_llm_base_url or llm_base_url
+                    groq_models = get_groq_model_ids(
+                        api_key=effective_api_key,
+                        base_url=effective_base_url,
+                    )
+
+                    if groq_models:
+                        selected_index = 0
+                        if llm_model_name in groq_models:
+                            selected_index = groq_models.index(llm_model_name)
+
+                        st_llm_model_name = llm_form_panel.selectbox(
+                            tr("Model Name"),
+                            options=groq_models,
+                            index=selected_index,
+                            key="groq_model_name_select",
+                        )
+                    else:
+                        st_llm_model_name = llm_form_panel.text_input(
+                            tr("Model Name"),
+                            value=llm_model_name,
+                            key="groq_model_name_input",
+                        )
+                        if effective_api_key:
+                            llm_form_panel.caption(tr("Groq Model List Load Failed"))
+                        else:
+                            llm_form_panel.caption(
+                                tr("Groq API Key Required for Model List")
+                            )
                 else:
                     st_llm_model_name = llm_form_panel.text_input(
                         tr("Model Name"),
                         value=llm_model_name,
-                        key="groq_model_name_input",
+                        key=f"{llm_provider}_model_name_input",
                     )
-                    if effective_api_key:
-                        llm_form_panel.caption(tr("Groq Model List Load Failed"))
-                    else:
-                        llm_form_panel.caption(
-                            tr("Groq API Key Required for Model List")
-                        )
-            else:
-                st_llm_model_name = llm_form_panel.text_input(
-                    tr("Model Name"),
-                    value=llm_model_name,
-                    key=f"{llm_provider}_model_name_input",
-                )
-            # 输入框展示 Registry 默认值，但配置只保存真实的用户覆盖值。
-            # 这样默认模型、Base URL 更新后，未自定义的用户能够自动跟随。
-            _set_runtime_config(
-                "app",
-                llm_provider_spec.config_key("api_key"),
-                st_llm_api_key,
-            )
-            _set_runtime_config(
-                "app",
-                llm_provider_spec.config_key("base_url"),
-                normalize_provider_override(
-                    st_llm_base_url,
-                    llm_default_base_url,
-                ),
-            )
-            _set_runtime_config(
-                "app",
-                llm_provider_spec.config_key("model_name"),
-                normalize_provider_override(
-                    st_llm_model_name,
-                    llm_provider_spec.default_model,
-                ),
-            )
-
-            # Provider 专用字段也由 Registry 声明。例如 Cloudflare AI Gateway
-            # 需要 Account ID；以后新增类似字段时无需再在 Main.py 增加判断。
-            for field in llm_provider_spec.extra_fields:
-                field_config_key = llm_provider_spec.config_key(field.config_suffix)
-                field_value = llm_form_panel.text_input(
-                    tr(field.label_key),
-                    value=(config.app.get(field_config_key, "") or field.default_value),
-                    type="password" if field.secret else "default",
-                    key=f"{llm_provider}_{field.config_suffix}_input",
+                _set_runtime_config(
+                    "app",
+                    llm_provider_spec.config_key("api_key"),
+                    st_llm_api_key,
                 )
                 _set_runtime_config(
                     "app",
-                    field_config_key,
+                    llm_provider_spec.config_key("base_url"),
                     normalize_provider_override(
-                        field_value,
-                        field.default_value,
+                        st_llm_base_url,
+                        llm_default_base_url,
+                    ),
+                )
+                _set_runtime_config(
+                    "app",
+                    llm_provider_spec.config_key("model_name"),
+                    normalize_provider_override(
+                        st_llm_model_name,
+                        llm_provider_spec.default_model,
                     ),
                 )
 
-            if llm_form_panel.button(
-                tr("Test LLM Connection"),
-                key="test_llm_connection_button",
-                use_container_width=True,
-                type="secondary",
-                icon=":material/network_check:",
-            ):
-                with config.try_runtime_config_lock() as lock_acquired:
+                for field in llm_provider_spec.extra_fields:
+                    field_config_key = llm_provider_spec.config_key(field.config_suffix)
+                    field_value = llm_form_panel.text_input(
+                        tr(field.label_key),
+                        value=(config.app.get(field_config_key, "") or field.default_value),
+                        type="password" if field.secret else "default",
+                        key=f"{llm_provider}_{field.config_suffix}_input",
+                    )
+                    _set_runtime_config(
+                        "app",
+                        field_config_key,
+                        normalize_provider_override(
+                            field_value,
+                            field.default_value,
+                        ),
+                    )
+
+                if llm_form_panel.button(
+                    tr("Test LLM Connection"),
+                    key="test_llm_connection_button",
+                    use_container_width=True,
+                    type="secondary",
+                    icon=":material/network_check:",
+                ):
+                    with config.try_runtime_config_lock() as lock_acquired:
+                        if not lock_acquired:
+                            llm_form_panel.warning(tr("Runtime Configuration Busy"))
+                        else:
+                            with llm_form_panel.spinner(tr("Testing LLM Connection")):
+                                connection_ok, connection_error, connection_elapsed = (
+                                    llm.test_connection()
+                                )
+
                     if not lock_acquired:
-                        llm_form_panel.warning(tr("Runtime Configuration Busy"))
-                    else:
-                        with llm_form_panel.spinner(tr("Testing LLM Connection")):
-                            connection_ok, connection_error, connection_elapsed = (
-                                llm.test_connection()
+                        connection_ok = None
+                    elif connection_ok:
+                        llm_form_panel.success(
+                            tr("LLM Connection Test Succeeded").format(
+                                provider=llm_provider_labels[llm_provider],
+                                model=st_llm_model_name or "-",
+                                elapsed=f"{connection_elapsed:.2f}",
                             )
-
-                if not lock_acquired:
-                    connection_ok = None
-                elif connection_ok:
-                    llm_form_panel.success(
-                        tr("LLM Connection Test Succeeded").format(
-                            provider=llm_provider_labels[llm_provider],
-                            model=st_llm_model_name or "-",
-                            elapsed=f"{connection_elapsed:.2f}",
                         )
-                    )
-                else:
-                    connection_error = format_llm_connection_error(
-                        llm_provider,
-                        st_llm_base_url,
-                        connection_error,
-                    )
-                    llm_form_panel.error(
-                        tr("LLM Connection Test Failed").format(error=connection_error)
-                    )
-
-        # 右侧面板 - API 密钥设置
-        with right_config_panel:
-            pexels_api_key = _get_material_api_keys("pexels_api_keys")
-            pexels_api_key = st.text_input(
-                tr("Pexels API Key"),
-                value=pexels_api_key,
-                type="password",
-                key="pexels_api_keys_input",
-            )
-            _save_material_api_keys("pexels_api_keys", pexels_api_key)
-
-            pixabay_api_key = _get_material_api_keys("pixabay_api_keys")
-            pixabay_api_key = st.text_input(
-                tr("Pixabay API Key"),
-                value=pixabay_api_key,
-                type="password",
-                key="pixabay_api_keys_input",
-            )
-            _save_material_api_keys("pixabay_api_keys", pixabay_api_key)
-
-            coverr_api_key = _get_material_api_keys("coverr_api_keys")
-            coverr_api_key = st.text_input(
-                tr("Coverr API Key"),
-                value=coverr_api_key,
-                type="password",
-                key="coverr_api_keys_input",
-            )
-            _save_material_api_keys("coverr_api_keys", coverr_api_key)
+                    else:
+                        connection_error = format_llm_connection_error(
+                            llm_provider,
+                            st_llm_base_url,
+                            connection_error,
+                        )
+                        llm_form_panel.error(
+                            tr("LLM Connection Test Failed").format(error=connection_error)
+                        )
 
     _save_runtime_config()
 
@@ -2712,7 +3188,7 @@ def _loomloom_script_signature(
 
 
 def _render_local_script_generation(params):
-    """保留 MoneyPrinterTurbo 原有的本地 LLM 脚本生成路径。"""
+    """保留原有的本地 LLM 脚本生成路径。"""
     if not st.button(
         tr("Generate Video Script and Keywords"),
         key="auto_generate_script",
@@ -5292,7 +5768,7 @@ def _render_generation_controls(
             webui_task.submit_generation(
                 task_id=task_id,
                 params=params,
-                capture_logs=not config.ui.get("hide_log", False),
+                capture_logs=not config.ui.get("hide_log", True),
                 voice_preview=reusable_voice_preview,
                 loomloom_video_request=loomloom_video_request,
             )
@@ -5310,13 +5786,14 @@ def _render_generation_controls(
 
         st.session_state["current_generation_task_id"] = task_id
         logger.info(f"WebUI generation task submitted: task_id={task_id}")
+        st.rerun()
 
-    _render_current_generation_task()
     return start_button
 
 
 def _render_application():
     """按固定顺序渲染顶部栏、弹窗、生成表单和任务结果。"""
+    _render_theme_anchor()
     _render_top_bar()
 
     if st.session_state.get("settings_dialog_open", False):
@@ -5329,26 +5806,51 @@ def _render_application():
     restore_succeeded = st.session_state.pop("task_restore_succeeded", False)
     if restore_applied or restore_succeeded:
         st.success(tr("Task Configuration Loaded"))
+        st.session_state["app_view"] = "editor"
 
-    with st.container(key="main_settings_grid"):
-        panel = st.columns(4)
-    left_panel = panel[0]
-    middle_panel = panel[1]
-    audio_panel = panel[2]
-    right_panel = panel[3]
+    with st.container(key="home_workspace"):
+        _render_home()
 
+    uploaded_files = []
+    uploaded_audio_file = None
+    uploaded_bgm_file = None
+    voice_mode = VOICE_MODE_TTS
     params = VideoParams(video_subject="")
     params.match_materials_to_script = bool(
         st.session_state.get("match_materials_to_script", False)
     )
-    _render_script_settings(left_panel, params)
 
-    uploaded_files = _render_video_settings(middle_panel, params)
-    uploaded_audio_file, uploaded_bgm_file, voice_mode = _render_audio_settings(
-        audio_panel, params
-    )
-
-    _render_subtitle_settings(right_panel, params)
+    with st.container(key="editor_workspace"):
+        left_col, center_col, right_col = st.columns([0.28, 0.44, 0.28], gap="small")
+        with left_col:
+            tab_script, tab_subtitles = st.tabs(["SCRIPT", "SUBTITLES"])
+            with tab_script:
+                with st.container(key="panel_script"):
+                    _render_script_settings(st.container(), params)
+            with tab_subtitles:
+                with st.container(key="panel_subtitles"):
+                    _render_subtitle_settings(st.container(), params)
+        with center_col:
+            task_id, task = _current_task_snapshot()
+            state = _normalize_task_state((task or {}).get("state"))
+            if state == const.TASK_STATE_PROCESSING:
+                _render_running_generation_task(task_id)
+            else:
+                if state in {const.TASK_STATE_COMPLETE, const.TASK_STATE_FAILED}:
+                    _remove_active_generation_task(task_id)
+                _render_stage_surfaces(task_id, task)
+        with right_col:
+            tab_video, tab_audio = st.tabs(["VIDEO", "AUDIO"])
+            with tab_video:
+                with st.container(key="panel_video"):
+                    uploaded_files = _render_video_settings(st.container(), params)
+            with tab_audio:
+                with st.container(key="panel_audio"):
+                    (
+                        uploaded_audio_file,
+                        uploaded_bgm_file,
+                        voice_mode,
+                    ) = _render_audio_settings(st.container(), params)
 
     generation_submitted = _render_generation_controls(
         params,
