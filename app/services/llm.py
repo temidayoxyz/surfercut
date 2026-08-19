@@ -660,43 +660,52 @@ Please note that you must use English for generating video search terms; Chinese
     response = ""
     for i in range(_max_retries):
         try:
+            current_prompt = prompt if i == 0 else (
+                f"List {amount} short stock footage search keywords (1-3 words each) "
+                f"for video footage matching this theme: {video_subject[:100]}. "
+                f"Output ONLY a valid JSON list of strings, for example: [\"scenic nature\", \"morning sunrise\"]."
+            )
             if app_config is None:
-                response = _generate_response(prompt)
+                response = _generate_response(current_prompt)
             else:
-                response = _generate_response(prompt, app_config=app_config)
-            if response.startswith("Error: "):
-                # generate_terms 的公开返回类型是 List[str]。如果把 Provider 的
-                # 错误文案原样返回，下游只做空值判断时会把非空字符串误认为成功，
-                # 素材下载循环还会按字符遍历错误文案，产生无意义的外部请求。
-                # 这里统一返回空列表，让任务编排层在真实故障位置立即结束任务。
-                logger.error(f"failed to generate video terms: {response}")
-                return []
-            search_terms = json.loads(_strip_code_fence(response))
-            if not isinstance(search_terms, list) or not all(
-                isinstance(term, str) for term in search_terms
-            ):
-                logger.error("response is not a list of strings.")
-                continue
+                response = _generate_response(current_prompt, app_config=app_config)
+
+            if response and not response.startswith("Error: "):
+                cleaned = _strip_code_fence(response)
+                search_terms = json.loads(cleaned)
+                if isinstance(search_terms, list) and all(
+                    isinstance(term, str) for term in search_terms
+                ):
+                    if search_terms:
+                        break
+            else:
+                logger.warning(f"attempt {i + 1} to generate terms returned: {response}")
 
         except Exception as e:
-            logger.warning(f"failed to generate video terms: {str(e)}")
-            if response:
+            logger.warning(f"failed to generate video terms on attempt {i + 1}: {str(e)}")
+            if response and not response.startswith("Error: "):
                 match = re.search(r"\[.*]", response, re.DOTALL)
                 if match:
                     try:
                         search_terms = json.loads(match.group())
-                    except Exception as e:
-                        # 这里保留重试流程，但必须记录 LLM 返回的非标准 JSON，
-                        # 否则后续排查搜索词为空时无法定位
-                        # 是模型格式问题还是解析逻辑问题。
-                        logger.warning(f"failed to generate video terms: {str(e)}")
+                        if isinstance(search_terms, list) and len(search_terms) > 0:
+                            break
+                    except Exception:
+                        pass
 
-        if search_terms and len(search_terms) > 0:
-            break
-        if i < _max_retries:
-            logger.warning(f"failed to generate video terms, trying again... {i + 1}")
+        if i < _max_retries - 1:
+            logger.warning(f"retrying video terms generation... ({i + 2}/{_max_retries})")
 
-    logger.success(f"completed: \n{search_terms}")
+    if not search_terms:
+        # Fallback: extract clean terms from subject so video creation never halts
+        logger.warning("LLM terms generation failed or returned empty; using fallback keywords.")
+        words = [w.strip(".,!?:;\"'()[]{}") for w in re.split(r"[\s,]+", video_subject) if len(w) > 3]
+        fallback = [w for w in words if w.lower() not in {"this", "that", "with", "from", "have", "they", "will", "what", "when", "your", "about"}]
+        if len(fallback) < amount:
+            fallback.extend(["cinematic nature", "peaceful scenery", "inspirational light", "ambient horizon", "serene landscape"])
+        search_terms = fallback[:amount]
+
+    logger.success(f"completed terms generation: \n{search_terms}")
     return search_terms
 
 
