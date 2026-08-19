@@ -1345,17 +1345,21 @@ def _icon_img(icon, color="c8c8c8", size=20):
 
 def _render_theme_selector():
     """顶部栏外观选择；写入 config.toml 后跨会话保留。"""
+    current_theme = _normalize_theme(config.ui.get("theme", "system"))
+    options = ["light", "dark", "system"]
+    idx = options.index(current_theme) if current_theme in options else 0
     selected_theme = st.selectbox(
         tr("Theme"),
-        options=list(THEME_OPTIONS),
+        options=options,
+        index=idx,
         format_func=lambda value: {
-            "system": tr("Theme System"),
-            "light": tr("Theme Light"),
-            "dark": tr("Theme Dark"),
-        }[value],
+            "light": f"☀️ {tr('Theme Light')}",
+            "dark": f"🌙 {tr('Theme Dark')}",
+            "system": f"💻 {tr('Theme System')}",
+        }.get(value, value),
         key="ui_theme_selector",
         label_visibility="collapsed",
-        width=115,
+        width=120,
     )
     if selected_theme:
         normalized = _normalize_theme(selected_theme)
@@ -1363,6 +1367,7 @@ def _render_theme_selector():
         if normalized != previous_theme:
             _set_runtime_config("ui", "theme", normalized)
             _save_runtime_config()
+            st.rerun()
 
 
 def _render_brand(available_update: str | None = None):
@@ -1514,6 +1519,18 @@ def _render_top_bar():
                     st.session_state["ui_language"] = selected_language_code
                     _set_runtime_config("ui", "language", selected_language_code)
                     _save_runtime_config()
+                    st.rerun()
+
+            if view == "editor":
+                if st.button(
+                    tr("Generate Video"),
+                    key="generate_video_top_button",
+                    type="primary",
+                    icon=":material/movie:",
+                    width="content",
+                ):
+                    _prepare_generation_task()
+                    st.session_state["trigger_generate_video"] = True
                     st.rerun()
 
 
@@ -5619,13 +5636,7 @@ def _render_generation_controls(
         # 已经得到明确处理，清除标记，避免后续普通生成继续显示旧提示。
         st.session_state.pop("task_restore_upload_requirements", None)
 
-    start_button = st.button(
-        tr("Generate Video"),
-        use_container_width=True,
-        type="primary",
-        key="generate_video_button",
-        on_click=_prepare_generation_task,
-    )
+    start_button = st.session_state.pop("trigger_generate_video", False)
     render_onboarding_tour()
     if start_button:
         _save_runtime_config()
